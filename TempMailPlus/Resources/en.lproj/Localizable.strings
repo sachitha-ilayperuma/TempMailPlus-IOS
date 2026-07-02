@@ -1,0 +1,6 @@
+/* Localization scaffold. Full string set (ported from Android strings.xml across
+   7 locales: en, es, de, pt, ru, zh-Hans, zh-Hant) lands in Phase 7. */
+
+"app_name" = "TempMailPlus";
+"home_title" = "Instantly generate temporary emails for free";
+"dark_mode" = "Dark mode";
