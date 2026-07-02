@@ -121,9 +121,16 @@ Notes / faithful quirks captured by tests:
 - `InboxViewModelTest` in Android was entirely commented out; real coverage was added at the
   data/domain layer instead (the view model arrives in Phase 2).
 
+### Review carry-ins (from Phase 1 review, 2026-07-02)
+- **[Phase 2]** Add a request-URL construction test for `EmailApiService` (stub `URLProtocol`;
+  assert path + query for e.g. `custom-email/create`). `url(_:query:)` is currently untested.
+- **[Phase 3]** `TempEmailRepositoryImpl.cachedEmails` is unsynchronized mutable state — safe now
+  (MainActor-driven), but revisit when the WebSocket writes emails off the main actor / when strict
+  concurrency is enabled.
+
 ## Phase 2 — Home flow ⏳
 
 _Next._ `HomeViewModel` (mirror `HomeUiState` + expiry/active-email logic), Home screen UI 1:1,
 confirmation sheet, copy toast, bottom nav + top bar + drawer scaffold. Will add reactive
 publishers to `DataStoreManager` for observed values (subscription status, new-email flag,
-selected email).
+selected email). Also picks up the Phase 2 review carry-in above (URL-construction test).
