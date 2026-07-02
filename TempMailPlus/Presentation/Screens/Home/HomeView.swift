@@ -120,7 +120,7 @@ struct HomeView: View {
                     Button {
                         if let email = s.tempEmail?.email {
                             UIPasteboard.general.string = email
-                            copied = true
+                            withAnimation { copied = true }
                         }
                     } label: {
                         Image(systemName: "doc.on.doc.fill")
@@ -147,7 +147,7 @@ struct HomeView: View {
                     .task(id: copied) {
                         guard copied else { return }
                         try? await Task.sleep(nanoseconds: 1_000_000_000)
-                        copied = false
+                        withAnimation { copied = false }
                     }
             }
         }

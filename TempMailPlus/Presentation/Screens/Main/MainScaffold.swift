@@ -7,6 +7,7 @@ import SwiftUI
 struct MainScaffold: View {
     @ObservedObject var viewModel: HomeViewModel
     @EnvironmentObject private var theme: ThemeManager
+    @Environment(\.scenePhase) private var scenePhase
 
     enum Tab { case home, inbox }
     @State private var tab: Tab = .home
@@ -47,6 +48,13 @@ struct MainScaffold: View {
         .preferredColorScheme(theme.colorScheme)
         .sheet(isPresented: $showPremium) {
             premiumPlaceholder
+        }
+        // Ported from Android EmailValidityObserver (ON_RESUME): re-check expiry when the
+        // app returns to the foreground, since an email may have expired while backgrounded.
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                viewModel.checkAndHandleEmailExpiration()
+            }
         }
     }
 
