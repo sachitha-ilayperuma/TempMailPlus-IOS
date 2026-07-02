@@ -4,20 +4,78 @@ import Foundation
 /// (`NetworkModule`, `DataStoreModule`, `RepoModule`, `AnalyticsModule`, …).
 ///
 /// Dependencies are constructed here and injected into view models via initializers.
-/// Phase 0 wires only the `ThemeManager`; each subsequent phase adds its graph:
-///   • Phase 1: DataStoreManager, Decryptor, EmailApiService, TimeProvider, repositories
-///   • Phase 2: TempEmail use cases + HomeViewModel factory
-///   • Phase 3: WebSocketManager
-///   • Phase 4: CustomEmail use cases
-///   • Phase 5: Ads managers + consent
-///   • Phase 6: BillingRepository (StoreKit 2)
-///   • Phase 7: AnalyticsTracker
+///   • Phase 1 (this): DataStore, decrypted API client, repositories, TimeProvider,
+///     REST + validation use cases.
+///   • Phase 2: HomeViewModel factory.
+///   • Phase 3: WebSocketManager + WS use cases.
+///   • Phase 5: Ads managers + consent.
+///   • Phase 6: BillingRepository (StoreKit 2).
+///   • Phase 7: AnalyticsTracker.
 @MainActor
 final class AppContainer: ObservableObject {
+    // Presentation
     let themeManager = ThemeManager()
 
-    // Future dependencies are added as `let` properties and passed into
-    // view-model factories below (kept empty in Phase 0).
+    // Data
+    let dataStore: DataStoreManager
+    let resourceProvider: ResourceProvider
+    let api: EmailApi
+    let deviceIdProvider: DeviceIdProvider
 
-    init() {}
+    // Repositories
+    let tempEmailRepository: TempEmailRepository
+    let timeRepository: TimeRepository
+    let emailLimitRepository: EmailLimitRepository
+    let onboardRepository: OnboardRepository
+
+    // Core
+    let timeProvider: TimeProvider
+
+    // Use cases
+    let tempEmailUseCases: TempEmailUseCases
+    let validateUsernameUseCase: ValidateUsernameUseCase
+    let validateDailyEmailLimitUseCase: ValidateDailyEmailLimitUseCase
+
+    init() {
+        let dataStore = DataStoreManager()
+        self.dataStore = dataStore
+        self.resourceProvider = ResourceProviderImpl()
+
+        // Base URL is AES-decrypted from SecretConstants. This is deterministic and
+        // covered by unit tests; a failure here means the bundled constants are broken.
+        guard let api = try? EmailApiService() else {
+            fatalError("TempMailPlus: failed to decrypt the API base URL — check SecretConstants/Decryptor.")
+        }
+        self.api = api
+
+        let deviceIdProvider = DeviceIdProviderImpl(dataStore: dataStore)
+        self.deviceIdProvider = deviceIdProvider
+
+        let tempEmailRepository = TempEmailRepositoryImpl(api: api, deviceIdProvider: deviceIdProvider)
+        self.tempEmailRepository = tempEmailRepository
+        let timeRepository = TimeRepositoryImpl(api: api, dataStore: dataStore)
+        self.timeRepository = timeRepository
+        self.emailLimitRepository = EmailLimitRepositoryImpl(api: api, dataStore: dataStore)
+        self.onboardRepository = OnboardRepositoryImpl(dataStore: dataStore)
+
+        self.timeProvider = TimeProvider(timeRepository: timeRepository)
+
+        self.tempEmailUseCases = TempEmailUseCases(
+            generateTempEmail: GenerateTempEmailUseCase(repository: tempEmailRepository),
+            activateEmail: ActivateEmailUseCase(repository: tempEmailRepository),
+            getEmailsByAddress: GetEmailsByAddressUseCase(repository: tempEmailRepository),
+            getEmailById: GetEmailByIDUseCase(repository: tempEmailRepository),
+            getEmailDomainsUseCase: GetEmailDomainsUseCase(repository: tempEmailRepository),
+            getActiveCustomEmailsUseCase: GetActiveCustomEmailsUseCase(repository: tempEmailRepository),
+            createCustomEmailUseCase: CreateCustomEmailUseCase(repository: tempEmailRepository),
+            syncServerTimeUseCase: SyncServerTimeUseCase(repository: timeRepository)
+        )
+        self.validateUsernameUseCase = ValidateUsernameUseCase(
+            validator: UsernameValidator(),
+            resourceProvider: resourceProvider
+        )
+        self.validateDailyEmailLimitUseCase = ValidateDailyEmailLimitUseCase(
+            repository: emailLimitRepository
+        )
+    }
 }

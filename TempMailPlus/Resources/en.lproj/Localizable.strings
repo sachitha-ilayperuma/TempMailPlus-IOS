@@ -4,3 +4,10 @@
 "app_name" = "TempMailPlus";
 "home_title" = "Instantly generate temporary emails for free";
 "dark_mode" = "Dark mode";
+
+/* Username validation (used by UsernameValidator — Phase 1) */
+"enter_name" = "Please enter a username to continue";
+"too_short" = "Too short - enter at least 3 characters";
+"too_long" = "Too long - keep it under 15 characters";
+"invalid_characters" = "Invalid characters - allowed: letters, numbers, . _ -";
+"restricted_name" = "Please remove the restricted term:";

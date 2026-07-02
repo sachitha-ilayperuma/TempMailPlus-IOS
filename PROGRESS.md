@@ -8,7 +8,7 @@ Running log of what's been done, per phase. Plan lives in
 | Phase | Scope | State |
 |-------|-------|-------|
 | **0** | Bootstrap: project, theme, fonts, DI skeleton, themed shell | ✅ Done |
-| **1** | Domain + Data core (models, API, decryption, DataStore, tests) | ⏳ Not started |
+| **1** | Domain + Data core (models, API, decryption, DataStore, tests) | ✅ Done |
 | **2** | Home flow | ⬜ Not started |
 | **3** | Inbox + Email detail + realtime WebSocket | ⬜ Not started |
 | **4** | Custom email | ⬜ Not started |
@@ -82,11 +82,48 @@ Open follow-ups (from plan §5/§8, not blocking):
 
 ---
 
-## Phase 1 — Domain + Data core ⏳
+## Phase 1 — Domain + Data core ✅ (2026-07-02)
 
-_Not started._ Planned scope:
-- Domain models, repository protocols, use cases, `Result`, `UsernameValidator`, `ForbiddenKeywords`.
-- `SecretConstants` + `Decryptor` (CommonCrypto AES/CBC) — verify decrypted base/WS URLs match Android.
-- `EmailApiService` (URLSession) + all DTOs; `DataStoreManager` (UserDefaults, same keys);
-  `DeviceIdProvider`; `TimeProvider` + server-time sync.
-- Unit tests (port `InboxViewModelTest`; add validator/expiry/decryption/time-sync tests).
+**Deliverable met:** headless domain + data layer, all unit tests green (**26/26**).
+
+Done:
+- **Domain models:** `Email`, `TempEmail` (resilient Codable), `Attachment`, `ActiveCustomEmail`,
+  `SubscriptionInfo`, `SubscriptionStatus`, `BillingProducts`.
+- **Domain utils/validation:** `Resource` (maps Android `Result`), `CustomEmailError`,
+  `ForbiddenKeywords` (full list), `UsernameValidator` + `ValidationResult`.
+- **Repository protocols + use cases:** REST + validation use cases and `TempEmailUseCases`
+  aggregator. WebSocket + billing use cases deferred to Phases 3/6.
+- **Security:** `SecretConstants` (same blobs) + `Decryptor` (CommonCrypto AES/CBC/PKCS7).
+- **Remote:** `EmailApi`/`EmailApiService` (URLSession, base URL decrypted at init), DTOs (Codable),
+  `Mappers`.
+- **Storage:** `DataStoreManager` (UserDefaults, keys mirror Android via `PreferenceKeys`).
+- **Repos:** `TempEmailRepositoryImpl`, `TimeRepositoryImpl`, `EmailLimitRepositoryImpl`,
+  `DeviceIdProviderImpl` (identifierForVendor + persisted UUID), `OnboardRepositoryImpl`,
+  `ResourceProviderImpl`.
+- **Core:** `Extensions` (ensureEpochMillis, file size, time-ago, UTC date), `TimeProvider`.
+- **DI:** `AppContainer` builds the full Phase-1 graph.
+- **Tests:** added a unit-test target to the hand-written `.pbxproj` (hosted, `@testable`), scheme
+  wired for `xcodebuild test`. Suites: Decryptor, UsernameValidator, Extensions, DataStoreManager,
+  Mapper.
+
+Verified:
+- `xcodebuild … test` → **TEST SUCCEEDED**, 26 tests, 0 failures.
+- **Decryption confirmed**: `Decryptor` produces a valid `http(s)` base URL and `ws(s)` socket URL
+  from the ported constants — the CommonCrypto port matches Android output.
+
+Notes / faithful quirks captured by tests:
+- Forbidden-keyword match is first-in-list-wins (e.g. "mypaypal" → "pay", not "paypal") — matches
+  Android's in-order iteration.
+- `EmailDto` with a missing `date` maps to `receivedAt == 0`; a present-but-invalid date falls back
+  to now — matches Android `date?.let { … } ?: 0`.
+- Repositories are `async throws` (Android's `Flow` `Loading` emission becomes the view model
+  setting `isLoading` before the `await`); `Resource` retained for tri-state VM state.
+- `InboxViewModelTest` in Android was entirely commented out; real coverage was added at the
+  data/domain layer instead (the view model arrives in Phase 2).
+
+## Phase 2 — Home flow ⏳
+
+_Next._ `HomeViewModel` (mirror `HomeUiState` + expiry/active-email logic), Home screen UI 1:1,
+confirmation sheet, copy toast, bottom nav + top bar + drawer scaffold. Will add reactive
+publishers to `DataStoreManager` for observed values (subscription status, new-email flag,
+selected email).

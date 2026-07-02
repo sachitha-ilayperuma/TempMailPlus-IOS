@@ -8,7 +8,18 @@
 
 /* Begin PBXFileReference section */
 		AA00000000000000000000A5 /* TempMailPlus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TempMailPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00000000000000000000C2 /* TempMailPlusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TempMailPlusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		AA00000000000000000000D2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA00000000000000000000A1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA00000000000000000000A4;
+			remoteInfo = TempMailPlus;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AA00000000000000000000B5 /* TempMailPlus */ = {
@@ -17,6 +28,11 @@
 				AA00000000000000000000B6 /* Exceptions for "TempMailPlus" folder in "TempMailPlus" target */,
 			);
 			path = TempMailPlus;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000C9 /* TempMailPlusTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TempMailPlusTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +55,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000000000000000000C4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -54,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000A5 /* TempMailPlus.app */,
+				AA00000000000000000000C2 /* TempMailPlusTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,6 +105,27 @@
 			productReference = AA00000000000000000000A5 /* TempMailPlus.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA00000000000000000000C1 /* TempMailPlusTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000000000000000000C6 /* Build configuration list for PBXNativeTarget "TempMailPlusTests" */;
+			buildPhases = (
+				AA00000000000000000000C3 /* Sources */,
+				AA00000000000000000000C4 /* Frameworks */,
+				AA00000000000000000000C5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA00000000000000000000D1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA00000000000000000000C9 /* TempMailPlusTests */,
+			);
+			name = TempMailPlusTests;
+			productName = TempMailPlusTests;
+			productReference = AA00000000000000000000C2 /* TempMailPlusTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -93,6 +138,10 @@
 				TargetAttributes = {
 					AA00000000000000000000A4 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					AA00000000000000000000C1 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = AA00000000000000000000A4;
 					};
 				};
 			};
@@ -112,12 +161,20 @@
 			projectRoot = "";
 			targets = (
 				AA00000000000000000000A4 /* TempMailPlus */,
+				AA00000000000000000000C1 /* TempMailPlusTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		AA00000000000000000000A8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA00000000000000000000C5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -134,7 +191,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000000000000000000C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA00000000000000000000D1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA00000000000000000000A4 /* TempMailPlus */;
+			targetProxy = AA00000000000000000000D2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA00000000000000000000B1 /* Debug */ = {
@@ -276,6 +348,42 @@
 			};
 			name = Release;
 		};
+		AA00000000000000000000C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaldevs.tempmailplus.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TempMailPlus.app/TempMailPlus";
+			};
+			name = Debug;
+		};
+		AA00000000000000000000C8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaldevs.tempmailplus.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TempMailPlus.app/TempMailPlus";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -293,6 +401,15 @@
 			buildConfigurations = (
 				AA00000000000000000000B3 /* Debug */,
 				AA00000000000000000000B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA00000000000000000000C6 /* Build configuration list for PBXNativeTarget "TempMailPlusTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000C7 /* Debug */,
+				AA00000000000000000000C8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
