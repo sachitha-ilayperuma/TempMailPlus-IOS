@@ -162,6 +162,11 @@ Deferred to their phases (hooks in place):
 - Inbox tab is a placeholder (Phase 3).
 - Full drawer menu rows (Phase 7); branded logo/icons use SF Symbols as stand-ins.
 
+Post-review fixes (2026-07-02):
+- Ported `EmailValidityObserver`: `MainScaffold` observes `scenePhase == .active` and calls
+  `checkAndHandleEmailExpiration()` so a backgrounded-then-expired email flips to expired on return.
+- "Copied" toast now animates (wrapped in `withAnimation`).
+
 Carry-ins:
 - **[Phase 3]** `TempEmailRepositoryImpl.cachedEmails` unsynchronized (still open).
 - **[Phase 3]** Wire `startWebSocketService` (currently just calls `loadEmails`).
