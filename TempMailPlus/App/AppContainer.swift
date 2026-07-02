@@ -36,6 +36,9 @@ final class AppContainer: ObservableObject {
     let validateUsernameUseCase: ValidateUsernameUseCase
     let validateDailyEmailLimitUseCase: ValidateDailyEmailLimitUseCase
 
+    // View models (shared across screens, like the Android activity-scoped HomeViewModel)
+    let homeViewModel: HomeViewModel
+
     init() {
         let dataStore = DataStoreManager()
         self.dataStore = dataStore
@@ -76,6 +79,13 @@ final class AppContainer: ObservableObject {
         )
         self.validateDailyEmailLimitUseCase = ValidateDailyEmailLimitUseCase(
             repository: emailLimitRepository
+        )
+
+        self.homeViewModel = HomeViewModel(
+            tempEmailUseCases: tempEmailUseCases,
+            dataStore: dataStore,
+            timeProvider: timeProvider,
+            onboardRepository: onboardRepository
         )
     }
 }

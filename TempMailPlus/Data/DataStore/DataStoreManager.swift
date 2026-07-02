@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// Ported from Android `data/datasources/datastore/DataStoreManager.kt`.
 /// Backed by `UserDefaults` (the iOS analog of Preferences DataStore). Accessors are
@@ -15,8 +16,17 @@ final class DataStoreManager {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
+    // Reactive streams for the values Android exposed as DataStore `Flow`s and which the
+    // Home view model observes continuously (rather than one-shot reads). Backed by
+    // CurrentValueSubjects updated on write — sufficient because iOS runs the socket
+    // in-process (no separate service process like Android).
+    let hasNewEmailSubject: CurrentValueSubject<Bool, Never>
+    let isSubscribedSubject: CurrentValueSubject<Bool, Never>
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        self.hasNewEmailSubject = CurrentValueSubject(defaults.bool(forKey: PreferenceKeys.hasNewEmail))
+        self.isSubscribedSubject = CurrentValueSubject(defaults.bool(forKey: PreferenceKeys.isSubscribed))
     }
 
     // MARK: - Theme
@@ -25,7 +35,10 @@ final class DataStoreManager {
 
     // MARK: - New email flag
     func hasNewEmail() -> Bool { defaults.bool(forKey: PreferenceKeys.hasNewEmail) }
-    func setHasNewEmail(_ value: Bool) { defaults.set(value, forKey: PreferenceKeys.hasNewEmail) }
+    func setHasNewEmail(_ value: Bool) {
+        defaults.set(value, forKey: PreferenceKeys.hasNewEmail)
+        hasNewEmailSubject.send(value)
+    }
 
     // MARK: - Notification permission
     func isNotificationPermissionDeclined() -> Bool { defaults.bool(forKey: PreferenceKeys.notiPermissionDeclined) }
@@ -50,7 +63,10 @@ final class DataStoreManager {
 
     // MARK: - Subscription
     func isSubscribed() -> Bool { defaults.bool(forKey: PreferenceKeys.isSubscribed) }
-    func setSubscribed(_ value: Bool) { defaults.set(value, forKey: PreferenceKeys.isSubscribed) }
+    func setSubscribed(_ value: Bool) {
+        defaults.set(value, forKey: PreferenceKeys.isSubscribed)
+        isSubscribedSubject.send(value)
+    }
 
     // MARK: - Daily custom-email usage
     func getDailyEmailCount() -> Int { defaults.integer(forKey: PreferenceKeys.customEmailCount) }

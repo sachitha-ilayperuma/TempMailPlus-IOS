@@ -2,12 +2,44 @@
    7 locales: en, es, de, pt, ru, zh-Hans, zh-Hant) lands in Phase 7. */
 
 "app_name" = "TempMailPlus";
-"home_title" = "Instantly generate temporary emails for free";
 "dark_mode" = "Dark mode";
 
-/* Username validation (used by UsernameValidator — Phase 1) */
+/* Username validation (UsernameValidator — Phase 1) */
 "enter_name" = "Please enter a username to continue";
 "too_short" = "Too short - enter at least 3 characters";
 "too_long" = "Too long - keep it under 15 characters";
 "invalid_characters" = "Invalid characters - allowed: letters, numbers, . _ -";
 "restricted_name" = "Please remove the restricted term:";
+
+/* Home (Phase 2) */
+"home_title" = "Instantly generate temporary emails for free";
+"home_title_subscribed" = "Instantly generate temporary emails";
+"your_temp_email" = "Your Temporary Email Address";
+"desc_custom_email" = "Your custom email is available for a day";
+"connection_lost" = "Email Expired";
+"text_offline" = "Click Refresh to get a New Email for FREE";
+"text_offline_subscribed" = "Click Refresh to get a New Email";
+"loading" = "Loading...";
+"copied" = "Copied";
+"refresh" = "Refresh";
+"delete" = "Delete";
+"btn_custom_email" = "Custom Email";
+"try_dot_com" = "Try .com Domain";
+
+/* Confirmations (Phase 2) */
+"are_you_sure" = "Are you sure?";
+"delete_email" = "The current email address and messages will be deleted and a new mailbox created.";
+"cancel" = "Cancel";
+"reset_mailbox" = "Reset Mailbox?";
+"desc_reset_mailbox" = "This will clear all messages.";
+"no" = "No";
+"yes" = "Yes";
+"proceed" = "Proceed";
+"try_dot_com_title" = "You're about to switch to a .com email!";
+"try_dot_com_desc" = "Switching to a .com email will clear all your messages and create a new mailbox that expires in 5 minutes.";
+"try_dot_com_desc_subscribed" = "Switching to a .com email will clear all your messages and create a new mailbox.";
+
+/* Navigation (Phase 2) */
+"inbox" = "Inbox";
+"home" = "Home";
+"premium" = "Premium";

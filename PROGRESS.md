@@ -9,7 +9,7 @@ Running log of what's been done, per phase. Plan lives in
 |-------|-------|-------|
 | **0** | Bootstrap: project, theme, fonts, DI skeleton, themed shell | ✅ Done |
 | **1** | Domain + Data core (models, API, decryption, DataStore, tests) | ✅ Done |
-| **2** | Home flow | ⬜ Not started |
+| **2** | Home flow | ✅ Done |
 | **3** | Inbox + Email detail + realtime WebSocket | ⬜ Not started |
 | **4** | Custom email | ⬜ Not started |
 | **5** | Ads + consent | ⬜ Not started |
@@ -128,9 +128,45 @@ Notes / faithful quirks captured by tests:
   (MainActor-driven), but revisit when the WebSocket writes emails off the main actor / when strict
   concurrency is enabled.
 
-## Phase 2 — Home flow ⏳
+## Phase 2 — Home flow ✅ (2026-07-02)
 
-_Next._ `HomeViewModel` (mirror `HomeUiState` + expiry/active-email logic), Home screen UI 1:1,
-confirmation sheet, copy toast, bottom nav + top bar + drawer scaffold. Will add reactive
-publishers to `DataStoreManager` for observed values (subscription status, new-email flag,
-selected email). Also picks up the Phase 2 review carry-in above (URL-construction test).
+**Deliverable met:** launched on the simulator and generated a **real temp email from the live
+backend** (`…@evrioli.xyz`); Home renders 1:1 with Android. Tests: **29/29 green**, zero warnings.
+
+Done:
+- **`HomeViewModel`** (full port): `HomeUiState`, cold-start + legacy-email migration, server-time
+  sync, `generateNewEmail`, `updateCustomEmail` (for Phase 4), `loadEmails`,
+  `setSelectedEmailFromDropdown` (for Phase 3), the whole active-emails refresh machinery
+  (`shouldSkipFetchingCustomEmails` / `validateNormalEmail` / `buildLocalActiveEmails` /
+  `fetchActiveCustomEmails` / `handleActiveEmails`), normal/custom expiry countdowns
+  (`Task.sleep`, cancellable), `checkAndHandleEmailExpiration`. Coroutine jobs → cancellable Tasks;
+  `Flow` `Loading` → `isLoading` set before `await`.
+- **`ActiveEmailRefreshReason`** enum ported.
+- **`DataStoreManager`** reactive publishers (`hasNewEmailSubject`, `isSubscribedSubject`) for the
+  observed values.
+- **Home UI** (`HomeView`) 1:1: title, logo + new-mail badge, email pill + copy + "Copied" toast,
+  Refresh/Delete (Delete hidden for custom), Custom Email button, "Try .com" banner, expired state.
+- **`ConfirmSheet`** + `ConfirmationAction` (reset/delete/.com) as bottom sheets.
+- **Navigation scaffold** (`MainScaffold`): top bar (hamburger + Pacifico logo), bottom nav
+  (Home/Inbox/Premium), left drawer overlay (`AppDrawer`, dark-mode toggle functional), Inbox
+  placeholder, Premium placeholder sheet.
+- **DI:** `AppContainer` builds and owns the shared `HomeViewModel`; app roots at `MainScaffold`.
+  Removed the Phase-0 `RootShellView` (dead code).
+- **Carry-in #2 done:** `EmailApiTests` (stubbed `URLProtocol`) asserts path/query/method
+  construction and 4xx → `APIError`.
+
+Deferred to their phases (hooks in place):
+- Ad gating on refresh/delete/.com (Phase 5) — confirm actions currently regenerate directly.
+- Custom Email button opens nothing yet (Phase 4 sheet).
+- Premium button shows a placeholder (Phase 6 StoreKit).
+- Inbox tab is a placeholder (Phase 3).
+- Full drawer menu rows (Phase 7); branded logo/icons use SF Symbols as stand-ins.
+
+Carry-ins:
+- **[Phase 3]** `TempEmailRepositoryImpl.cachedEmails` unsynchronized (still open).
+- **[Phase 3]** Wire `startWebSocketService` (currently just calls `loadEmails`).
+
+## Phase 3 — Inbox + Email detail + realtime ⏳
+
+_Next._ `WebSocketManager` (`URLSessionWebSocketTask`), Inbox list + address dropdown +
+swipe-to-delete + empty/waiting states + new-email badge, Email detail (HTML + attachments).
