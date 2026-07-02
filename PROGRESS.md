@@ -25,6 +25,27 @@ Legend: ✅ done · 🚧 in progress · ⏳ next · ⬜ not started
 
 **Deliverable met:** app builds, installs, and launches on the iOS Simulator to a themed shell.
 
+### Post-review fixes (2026-07-02)
+Reviewed Phase 0 and applied the following before starting Phase 1:
+- **#1 Dynamic Type** — `AppTypography` now uses `Font.custom(_:size:relativeTo:)` so text scales
+  with the system font-size setting (parity with Android `.sp` + accessibility).
+- **#2 Single source of truth for prefs** — added `Data/DataStore/PreferenceKeys.swift` (mirrors
+  Android `PreferenceKeys.kt`); `ThemeManager` now uses `PreferenceKeys.darkMode`. Phase 1's
+  `DataStoreManager` will own these keys.
+- **#3 Color init** — dropped the fragile alpha heuristic in `Color(argb:)`; top byte is always
+  alpha (matches Compose `Color(Long)`; all tokens carry an explicit alpha byte).
+- **#4 Launch screen** — `Info.plist` `UILaunchScreen` is now an empty dict (removed the empty
+  `UIColorName` reference).
+- **#9 Version control** — `git init` + Phase 0 baseline commit (`aac50bc`), branch `main`.
+- Rebuilt clean after changes (no warnings); dark mode verified in the simulator.
+
+Deferred to their scheduled phases (intentional, not oversights):
+- Orientation: iPhone portrait-only (Android doesn't lock) — kept as a deliberate choice for the
+  vertical-scroll layouts.
+- Real AppIcon image → before TestFlight. `ITSAppUsesNonExemptEncryption` → Phase 8 (once AES lands).
+- Unit-test target (needs a second target in the `.pbxproj`) → scoped into Phase 1.
+
+
 Done:
 - Created sibling project folder `TempMailPlus-IOS` with layered structure
   (`App / Core / Data / Domain / Presentation / Resources`).
