@@ -101,4 +101,15 @@ final class AppContainer: ObservableObject {
     func makeEmailDetailViewModel() -> EmailDetailViewModel {
         EmailDetailViewModel(getEmailByIDUseCase: GetEmailByIDUseCase(repository: tempEmailRepository))
     }
+
+    /// Factory for the custom-email view model (one per sheet presentation, like Android's
+    /// `hiltViewModel()`-scoped `CustomEmailViewModel`).
+    func makeCustomEmailViewModel() -> CustomEmailViewModel {
+        CustomEmailViewModel(
+            createCustomEmailUseCase: CreateCustomEmailUseCase(repository: tempEmailRepository),
+            validateUsernameUseCase: validateUsernameUseCase,
+            dataStore: dataStore,
+            timeProvider: timeProvider
+        )
+    }
 }

@@ -11,7 +11,7 @@ Running log of what's been done, per phase. Plan lives in
 | **1** | Domain + Data core (models, API, decryption, DataStore, tests) | ✅ Done |
 | **2** | Home flow | ✅ Done |
 | **3** | Inbox + Email detail + realtime WebSocket | ✅ Done |
-| **4** | Custom email | ⬜ Not started |
+| **4** | Custom email | ✅ Done |
 | **5** | Ads + consent | ⬜ Not started |
 | **6** | Subscriptions (StoreKit 2) | ⬜ Not started |
 | **7** | Menu, FAQ, Rate, localization | ⬜ Not started |
@@ -242,8 +242,51 @@ Deferred to their phases (hooks in place):
 - Branded empty-inbox/logo icons use SF Symbols as stand-ins (Phase 7 polish).
 - Full HTML CSS parity with Android's `HtmlText` (Phase 7 polish, if needed after visual QA).
 
-## Phase 4 — Custom email ⏳
+## Phase 4 — Custom email ✅ (2026-07-03)
 
-_Next._ `CustomEmailViewModel` (validation, create, free-user 1-per-25h gate, rewarded-ad /
-subscription branching — ad gating itself lands in Phase 5), add-custom-email bottom sheet
-(username field + domain picker), wiring `getEmailDomains`/`custom-email/create`/`custom-email/list`.
+**Deliverable met:** builds clean (Debug + Release, zero warnings), **38/38 tests pass** (9 new),
+Home re-verified generating a real backend email after the wiring landed
+(`uzak62724@vecroniyt.com`).
+
+Done:
+- **`CustomEmailViewModel`** (full port): `createCustomEmail` (validate via `ValidateUsernameUseCase`
+  first, then call the create use case), success/error-code branching (`SUCCESS` vs. server
+  `error` field), `CustomEmailError` → localized message mapping (409/400/other),
+  `handleLockedUserCustomEmail` (routes to the ad-confirm popup or the subscription dialog),
+  `refreshCanCreateForLockedUser` (free-tier 1-per-25h gate: free iff no prior free usage AND no
+  active custom email), `showRewardAd` (stub — creates directly, same tier as Phase 2/3 ad
+  stubbing), `updateFreeEmailExpiredTimestamp` (25h), `resetCustomEmailState` (ported **exactly**:
+  only 4 fields reset, `reservationID`/`expiresAt`/`canCreateForLockedUser` intentionally left
+  as-is, matching a quirk in the Android source rather than "fixing" it).
+- **`WatchAdBottomSheet`** component ported (title/description/Watch-ad button/"or unlock premium").
+- **`AddCustomEmailSheet`**: username field + `@` + native `Menu`-based domain picker (replaces
+  Compose `DropdownMenu`), Continue button (disabled without username, "Processing.." state, crown
+  badge for free users), inline error toast that auto-dismisses after 1.4s, domain
+  auto-selects-first-on-load, reactively refreshes `canCreateForLockedUser` when the active-emails
+  list changes.
+- Wired end-to-end: `HomeView`'s existing `onOpenCustomEmail` hook (from Phase 2) now presents the
+  sheet via `MainScaffold`; success calls the existing `HomeViewModel.updateCustomEmail` (Phase 2).
+- **`AppContainer.makeCustomEmailViewModel()`** factory (one instance per sheet presentation, like
+  Android's `hiltViewModel()` scoping).
+- **Tests:** `CustomEmailViewModelTests` (9 cases) — invalid-username short-circuits before any
+  network call, success populates state, server-error and thrown-`CustomEmailError` paths, the
+  free-tier gate logic (default-free / blocked-by-existing-custom-email / blocked-after-free-used),
+  ad-vs-subscription routing, and the exact 4-field reset semantics.
+
+Deferred to their phases (hooks in place):
+- Real rewarded-ad SDK call (Phase 5) — `showRewardAd` currently creates the email directly.
+- Analytics (`logCustomEmailClicked`) is a documented no-op stub (Phase 7).
+- Daily 5/day limit (`ValidateDailyEmailLimitUseCase`, built in Phase 1) is not wired into this
+  screen — matches Android, where it's also unused by `AddCustomEmailBottomSheet`.
+
+**Verification gap (same as Phase 3):** the sheet is code-reviewed + compiles clean + has 9 unit
+tests over its view-model logic, but was **not visually screenshotted** — computer-use access was
+declined again this session. Home was re-confirmed working end-to-end after the wiring landed.
+Added to the deferred visual-check list (now: Inbox, Email detail, **Add Custom Email sheet**,
+domain picker menu, inline error toast, watch-ad sheet).
+
+## Phase 5 — Ads + consent ⏳
+
+_Next._ UMP consent gathering + privacy-options form, Banner (home)/Rewarded (gates
+refresh+.com+custom-email for free users)/App-Open ads, ironSource mediation. Will replace the
+ad-gating stubs left in place across Phases 2–4.

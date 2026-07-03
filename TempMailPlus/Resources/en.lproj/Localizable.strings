@@ -51,3 +51,17 @@
 "attachments" = "Attachments";
 "download_started" = "Download Started";
 "listening_for_mails" = "Listening for new mails...";
+
+/* Custom email (Phase 4) */
+"create_custom_email" = "Create Your Custom Email";
+"your_email" = "Your Email";
+"processing" = "Processing..";
+"text_continue" = "Continue";
+"error_email_limit_reached" = "Custom Email limit reached";
+"error_missing_parameters" = "Missing parameters";
+"error_generic" = "Something went wrong";
+"watch_ad_title" = "Help Us Grow 🌱";
+"watch_ad_desc" = "Your small support through a short ad helps us maintain and improve the app.";
+"watch_ad" = "Watch ad";
+"or" = "or";
+"unlock_premium_access" = "Unlock Premium Access";

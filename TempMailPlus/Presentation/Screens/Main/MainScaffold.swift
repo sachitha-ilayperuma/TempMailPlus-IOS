@@ -6,6 +6,7 @@ import SwiftUI
 /// `viewModel.isInitCalled`.
 struct MainScaffold: View {
     @ObservedObject var viewModel: HomeViewModel
+    @EnvironmentObject private var container: AppContainer
     @EnvironmentObject private var theme: ThemeManager
     @Environment(\.scenePhase) private var scenePhase
 
@@ -13,6 +14,7 @@ struct MainScaffold: View {
     @State private var tab: Tab = .home
     @State private var drawerOpen = false
     @State private var showPremium = false
+    @State private var showCustomEmail = false
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -22,7 +24,12 @@ struct MainScaffold: View {
 
                 ZStack {
                     switch tab {
-                    case .home:  HomeView(viewModel: viewModel, onOpenSubscription: { showPremium = true })
+                    case .home:
+                        HomeView(
+                            viewModel: viewModel,
+                            onOpenCustomEmail: { showCustomEmail = true },
+                            onOpenSubscription: { showPremium = true }
+                        )
                     case .inbox: InboxView(viewModel: viewModel)
                     }
                 }
@@ -48,6 +55,22 @@ struct MainScaffold: View {
         .preferredColorScheme(theme.colorScheme)
         .sheet(isPresented: $showPremium) {
             premiumPlaceholder
+        }
+        .sheet(isPresented: $showCustomEmail) {
+            AddCustomEmailSheet(
+                domainsList: viewModel.uiState.domains,
+                isSubscribed: viewModel.uiState.isSubscribed,
+                activeEmailsList: viewModel.uiState.activeEmailsList,
+                viewModel: container.makeCustomEmailViewModel(),
+                onDismiss: { showCustomEmail = false },
+                onAddCustomEmail: { email, reservationID, expiresAt in
+                    viewModel.updateCustomEmail(email: email, reservationID: reservationID, expiresAt: expiresAt)
+                },
+                onShowSubscriptionView: {
+                    showCustomEmail = false
+                    showPremium = true
+                }
+            )
         }
         // Ported from Android EmailValidityObserver (ON_RESUME): re-check expiry when the
         // app returns to the foreground, since an email may have expired while backgrounded.
