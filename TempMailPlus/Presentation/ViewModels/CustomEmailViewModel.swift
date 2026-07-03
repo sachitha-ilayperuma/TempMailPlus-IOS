@@ -23,19 +23,22 @@ final class CustomEmailViewModel: ObservableObject {
     private let dataStore: DataStoreManager
     private let timeProvider: TimeProvider
     private let rewardedAdManager: RewardedAdManager
+    private let analyticsTracker: AnalyticsTracker
 
     init(
         createCustomEmailUseCase: CreateCustomEmailUseCase,
         validateUsernameUseCase: ValidateUsernameUseCase,
         dataStore: DataStoreManager,
         timeProvider: TimeProvider,
-        rewardedAdManager: RewardedAdManager
+        rewardedAdManager: RewardedAdManager,
+        analyticsTracker: AnalyticsTracker
     ) {
         self.createCustomEmailUseCase = createCustomEmailUseCase
         self.validateUsernameUseCase = validateUsernameUseCase
         self.dataStore = dataStore
         self.timeProvider = timeProvider
         self.rewardedAdManager = rewardedAdManager
+        self.analyticsTracker = analyticsTracker
     }
 
     func createCustomEmail(prefix: String, domain: String) {
@@ -146,7 +149,7 @@ final class CustomEmailViewModel: ObservableObject {
         uiState.showRewardedAdConfirmPopup = false
     }
 
-    /// Stub — Android logs `AnalyticsEvent.ClickCustomEmail` here via Firebase.
-    /// Analytics wiring is Phase 7.
-    func logCustomEmailClicked(isSubscribed: Bool) {}
+    func logCustomEmailClicked(isSubscribed: Bool) {
+        analyticsTracker.logEvent(.clickCustomEmail(isPremium: isSubscribed))
+    }
 }

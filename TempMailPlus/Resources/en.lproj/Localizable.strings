@@ -1,79 +1,99 @@
-/* Localization scaffold. Full string set (ported from Android strings.xml across
-   7 locales: en, es, de, pt, ru, zh-Hans, zh-Hant) lands in Phase 7. */
+/* Generated from the Android app's strings.xml (values-en base key order,
+   values-en translations) — see PROGRESS.md Phase 7. */
 
+"ad_starts_in" = "Ad starts in";
 "app_name" = "TempMailPlus";
+"are_you_sure" = "Are you sure?";
+"attachments" = "Attachments";
+"blog" = "Blog";
+"btn_custom_email" = "Custom Email";
+"cancel" = "Cancel";
+"connection_lost" = "Email Expired";
+"copied" = "Copied";
+"copy_email" = "Copy email";
+"create_custom_email" = "Create Your Custom Email";
+"daily_limit_reached" = "You've reached today's limit of 5 custom emails.";
 "dark_mode" = "Dark mode";
-
-/* Username validation (UsernameValidator — Phase 1) */
+"delete" = "Delete";
+"delete_email" = "The current email address and messages will be deleted and a new mailbox created.";
+"desc_custom_email" = "Your custom email is available for a day";
+"desc_reset_mailbox" = "This will clear all messages.";
+"download_started" = "Download Started";
 "enter_name" = "Please enter a username to continue";
-"too_short" = "Too short - enter at least 3 characters";
-"too_long" = "Too long - keep it under 15 characters";
-"invalid_characters" = "Invalid characters - allowed: letters, numbers, . _ -";
-"restricted_name" = "Please remove the restricted term:";
-
-/* Home (Phase 2) */
+"error_email_limit_reached" = "Custom Email limit reached";
+"error_generic" = "Something went wrong";
+"error_missing_parameters" = "Missing parameters";
+"faq" = "FAQ";
+"faq1" = "What is Temp Mail Plus?";
+"faq10" = "Can other people see the emails I receive?";
+"faq11" = "The website isn't working correctly. What should I do?";
+"faq2" = "Do I need to register to use the service?";
+"faq3" = "Can you generate business emails for free using Temp Mail Plus?";
+"faq4" = "Can I receive attachments with my temporary email?";
+"faq5" = "Can I choose my temporary email address?";
+"faq6" = "Is this a Free service?";
+"faq7" = "What if I accidentally close the browser tab? Can I still access the email?";
+"faq8" = "What happens to the emails I receive?";
+"faq9" = "Do you store my IP address or personal information?";
+"faqa1" = "It is a free website that allows you to generate temporary, disposable email addresses in seconds.";
+"faqa10" = "No, The temporary email address provided for you is unique and not given to anyone else.";
+"faqa11" = "Kindly use a different browser or try refreshing the page. You can describe the problem to us at digitaldevs.solutions@gmail.com if it continues to occur.";
+"faqa2" = "No, Absolutely Not, Temp Mail Plus does not collect any of your personal information. You only need to visit the website to get a temporary email address created for you right away.";
+"faqa3" = "Yes you can generate business emails and personal temporary emails for free from Temp Mail Plus";
+"faqa4" = "Yes, Temp Mail Plus supports receiving emails with attachments. You can view and download attachments directly from the email view. We support common file formats including PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, and more.";
+"faqa5" = "The email addresses are produced at random.";
+"faqa6" = "Yes, Enjoy Temp Mail Plus and generate your temp emails for FREE.";
+"faqa7" = "Your current temporary email address and any emails received during that session will be lost if the browser tab is refreshed or closed.";
+"faqa8" = "Emails received at the temporary address will be shown in your inbox on the website. These emails are only kept for a short time before being automatically erased either manually or after a certain amount of time.";
+"faqa9" = "No, we do not collect any information. Visit Privacy Policy - https://temp-emails.net/privacy-policy";
+"go_ad_free" = "Go ad-free & faster";
+"help_center" = "Help Center";
 "home_title" = "Instantly generate temporary emails for free";
 "home_title_subscribed" = "Instantly generate temporary emails";
-"your_temp_email" = "Your Temporary Email Address";
-"desc_custom_email" = "Your custom email is available for a day";
-"connection_lost" = "Email Expired";
-"text_offline" = "Click Refresh to get a New Email for FREE";
-"text_offline_subscribed" = "Click Refresh to get a New Email";
-"loading" = "Loading...";
-"copied" = "Copied";
-"refresh" = "Refresh";
-"delete" = "Delete";
-"btn_custom_email" = "Custom Email";
-"try_dot_com" = "Try .com Domain";
-
-/* Confirmations (Phase 2) */
-"are_you_sure" = "Are you sure?";
-"delete_email" = "The current email address and messages will be deleted and a new mailbox created.";
-"cancel" = "Cancel";
-"reset_mailbox" = "Reset Mailbox?";
-"desc_reset_mailbox" = "This will clear all messages.";
-"no" = "No";
-"yes" = "Yes";
-"proceed" = "Proceed";
-"try_dot_com_title" = "You're about to switch to a .com email!";
-"try_dot_com_desc" = "Switching to a .com email will clear all your messages and create a new mailbox that expires in 5 minutes.";
-"try_dot_com_desc_subscribed" = "Switching to a .com email will clear all your messages and create a new mailbox.";
-
-/* Navigation (Phase 2) */
 "inbox" = "Inbox";
-"home" = "Home";
-"premium" = "Premium";
-
-/* Inbox + Email detail (Phase 3) */
-"no_email" = "No Email";
 "inbox_is_empty" = "Your inbox is empty";
-"waiting_for_new_emails" = "Waiting for new emails to arrive....";
-"attachments" = "Attachments";
-"download_started" = "Download Started";
+"invalid_characters" = "Invalid characters - allowed: letters, numbers, . _ -";
 "listening_for_mails" = "Listening for new mails...";
-
-/* Custom email (Phase 4) */
-"create_custom_email" = "Create Your Custom Email";
-"your_email" = "Your Email";
-"processing" = "Processing..";
-"text_continue" = "Continue";
-"error_email_limit_reached" = "Custom Email limit reached";
-"error_missing_parameters" = "Missing parameters";
-"error_generic" = "Something went wrong";
-"watch_ad_title" = "Help Us Grow 🌱";
-"watch_ad_desc" = "Your small support through a short ad helps us maintain and improve the app.";
-"watch_ad" = "Watch ad";
+"loading" = "Loading...";
+"no" = "No";
+"no_email" = "No Email";
 "or" = "or";
-"unlock_premium_access" = "Unlock Premium Access";
-
-/* Ads / consent (Phase 5) */
+"privacy_policy" = "Privacy Policy";
+"proceed" = "Proceed";
+"processing" = "Processing..";
+"rate_us" = "Rate us";
+"refresh" = "Refresh";
+"reset_mailbox" = "Reset Mailbox?";
+"restricted_name" = "Please remove the restricted term:";
 "show_privacy_options" = "Show Privacy Options Form";
-
-/* Subscription (Phase 6) */
 "subscription_point_1" = "Create unlimited .Com email addresses";
 "subscription_point_2" = "Generate 5 Custom emails per day";
 "subscription_point_3" = "Extended email life: 10-minute auto-expiry (";
-"subscription_sub_point_3" = "5 minutes";
 "subscription_point_4" = "Enjoy a 100% ad-free experience";
 "subscription_point_5" = "Multiple inbox support";
 "subscription_point_6" = "Custom domain support (coming soon)";
+"subscription_sub_point_3" = "5 minutes";
+"support_us" = "Support Us";
+"terms_conditions" = "Terms & Conditions";
+"text_continue" = "Continue";
+"text_offline" = "Click Refresh to get a New Email for FREE";
+"text_offline_subscribed" = "Click Refresh to get a New Email";
+"too_long" = "Too long - keep it under 15 characters";
+"too_short" = "Too short - enter at least 3 characters";
+"try_dot_com" = "Try .com Domain";
+"try_dot_com_desc" = "Switching to a .com email will clear all your messages and create a new mailbox that expires in 5 minutes.";
+"try_dot_com_desc_subscribed" = "Switching to a .com email will clear all your messages and create a new mailbox.";
+"try_dot_com_title" = "You’re about to switch to a .com email!";
+"try_our_web" = "Try our Web";
+"unlock_premium_access" = "Unlock Premium Access";
+"waiting_for_new_emails" = "Waiting for new emails to arrive....";
+"watch_ad" = "Watch ad";
+"watch_ad_desc" = "Your small support through a short ad helps us maintain and improve the app.";
+"watch_ad_title" = "Help Us Grow 🌱";
+"yes" = "Yes";
+"your_email" = "Your Email";
+"your_temp_email" = "Your Temporary Email Address";
+
+/* iOS-only additions (no Android source string; see PROGRESS.md Phase 7) */
+"home" = "Home";
+"premium" = "Premium";

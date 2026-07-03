@@ -44,6 +44,9 @@ final class AppContainer: ObservableObject {
     // Billing (Phase 6)
     let billingRepository: BillingRepository
 
+    // Analytics (Phase 7)
+    let analyticsTracker: AnalyticsTracker
+
     // View models (shared across screens, like the Android activity-scoped HomeViewModel)
     let homeViewModel: HomeViewModel
 
@@ -102,8 +105,11 @@ final class AppContainer: ObservableObject {
         self.rewardedAdManager = rewardedAdManager
         self.appOpenAdManager = AppOpenAdManager()
 
+        let analyticsTracker = AnalyticsTrackerImpl()
+        self.analyticsTracker = analyticsTracker
+
         self.billingRepository = BillingRepositoryImpl(
-            dataSource: StoreKitBillingDataSource(dataStore: dataStore)
+            dataSource: StoreKitBillingDataSource(dataStore: dataStore, analyticsTracker: analyticsTracker)
         )
 
         self.homeViewModel = HomeViewModel(
@@ -113,7 +119,8 @@ final class AppContainer: ObservableObject {
             onboardRepository: onboardRepository,
             adsConsentManager: adsConsentManager,
             rewardedAdManager: rewardedAdManager,
-            appOpenAdManager: appOpenAdManager
+            appOpenAdManager: appOpenAdManager,
+            analyticsTracker: analyticsTracker
         )
     }
 
@@ -131,13 +138,18 @@ final class AppContainer: ObservableObject {
             validateUsernameUseCase: validateUsernameUseCase,
             dataStore: dataStore,
             timeProvider: timeProvider,
-            rewardedAdManager: rewardedAdManager
+            rewardedAdManager: rewardedAdManager,
+            analyticsTracker: analyticsTracker
         )
     }
 
     /// Factory for the subscription view model (one per sheet presentation, like Android's
     /// `hiltViewModel()`-scoped `SubscriptionViewModel`).
     func makeSubscriptionViewModel() -> SubscriptionViewModel {
-        SubscriptionViewModel(billingRepository: billingRepository, dataStore: dataStore)
+        SubscriptionViewModel(
+            billingRepository: billingRepository,
+            dataStore: dataStore,
+            analyticsTracker: analyticsTracker
+        )
     }
 }

@@ -6,8 +6,7 @@ struct TempMailPlusApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Phase 7 will add Splash → Onboarding gating in front of this.
-            MainScaffold(viewModel: container.homeViewModel)
+            RootView(viewModel: container.homeViewModel)
                 .environmentObject(container)
                 .environmentObject(container.themeManager)
         }

@@ -38,6 +38,7 @@ private struct EchoResourceProvider: ResourceProvider {
 final class CustomEmailViewModelTests: XCTestCase {
     private var repo: FakeTempEmailRepository!
     private var dataStore: DataStoreManager!
+    private var analytics: FakeAnalyticsTracker!
     private var viewModel: CustomEmailViewModel!
     private let suite = "TempMailPlusTests.CustomEmailVM"
 
@@ -47,12 +48,14 @@ final class CustomEmailViewModelTests: XCTestCase {
         defaults.removePersistentDomain(forName: suite)
         dataStore = DataStoreManager(defaults: defaults)
         repo = FakeTempEmailRepository()
+        analytics = FakeAnalyticsTracker()
         viewModel = CustomEmailViewModel(
             createCustomEmailUseCase: CreateCustomEmailUseCase(repository: repo),
             validateUsernameUseCase: ValidateUsernameUseCase(validator: UsernameValidator(), resourceProvider: EchoResourceProvider()),
             dataStore: dataStore,
             timeProvider: TimeProvider(timeRepository: FakeTimeRepository()),
-            rewardedAdManager: RewardedAdManager()
+            rewardedAdManager: RewardedAdManager(),
+            analyticsTracker: analytics
         )
     }
 
@@ -141,5 +144,14 @@ final class CustomEmailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.uiState.reservationID, "r")
         XCTAssertEqual(viewModel.uiState.expiresAt, 5)
         XCTAssertEqual(viewModel.uiState.canCreateForLockedUser, canCreateBefore)
+    }
+
+    func test_logCustomEmailClicked_logsEventWithSubscriptionFlag() {
+        viewModel.logCustomEmailClicked(isSubscribed: true)
+        XCTAssertEqual(analytics.loggedEvents.count, 1)
+        guard case .clickCustomEmail(let isPremium) = analytics.loggedEvents[0] else {
+            return XCTFail("expected .clickCustomEmail event")
+        }
+        XCTAssertTrue(isPremium)
     }
 }

@@ -13,8 +13,26 @@ struct MainScaffold: View {
     enum Tab { case home, inbox }
     @State private var tab: Tab = .home
     @State private var drawerOpen = false
-    @State private var showPremium = false
-    @State private var showCustomEmail = false
+    @State private var showFAQ = false
+
+    /// Single source of truth for the three sheet-style modals (Premium, Custom Email,
+    /// Rate), presented via one `.sheet(item:)`. Stacking several independent
+    /// `.sheet(isPresented:)` modifiers on the same view is a known SwiftUI conflict
+    /// source (observed once during Phase 7 verification — see PROGRESS.md); this enum
+    /// makes "at most one sheet active" structurally true instead of relying on discipline
+    /// across four separate booleans. FAQ stays a separate `.fullScreenCover` since it's a
+    /// different presentation style and a single extra modifier carries no such risk.
+    private enum ActiveSheet: Identifiable {
+        case premium, customEmail, rate
+        var id: Int {
+            switch self {
+            case .premium: return 0
+            case .customEmail: return 1
+            case .rate: return 2
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -27,11 +45,11 @@ struct MainScaffold: View {
                     case .home:
                         HomeView(
                             viewModel: viewModel,
-                            onOpenCustomEmail: { showCustomEmail = true },
-                            onOpenSubscription: { showPremium = true }
+                            onOpenCustomEmail: { activeSheet = .customEmail },
+                            onOpenSubscription: { activeSheet = .premium }
                         )
                     case .inbox:
-                        InboxView(viewModel: viewModel, onShowSubscription: { showPremium = true })
+                        InboxView(viewModel: viewModel, onShowSubscription: { activeSheet = .premium })
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -48,12 +66,21 @@ struct MainScaffold: View {
                     .transition(.opacity)
 
                 AppDrawer(
+                    isDarkMode: theme.isDarkMode,
+                    isSubscribed: viewModel.uiState.isSubscribed,
                     isPrivacyOptionsRequired: viewModel.uiState.isPrivacyOptionsRequired,
+                    onToggleDarkMode: { theme.toggleDarkMode() },
+                    onOpenFAQ: { closeDrawer(); showFAQ = true },
+                    onBlogClicked: { viewModel.logFirebaseEvent(.clickTryOurBlog) },
+                    onTryOurWebClicked: { viewModel.logFirebaseEvent(.clickTryOurWeb) },
+                    onSupportUsClicked: { viewModel.logFirebaseEvent(.clickSupportUs) },
+                    onRateUsClicked: { closeDrawer(); activeSheet = .rate },
                     onShowPrivacyOptionsForm: {
                         if let vc = UIKitBridge.rootViewController {
                             viewModel.showPrivacyOptionsForm(from: vc) { _ in }
                         }
                     },
+                    onSubscriptionViewClicked: { closeDrawer(); activeSheet = .premium },
                     onClose: closeDrawer
                 )
                     .frame(width: 300)
@@ -62,30 +89,49 @@ struct MainScaffold: View {
         }
         .animation(.easeInOut(duration: 0.25), value: drawerOpen)
         .preferredColorScheme(theme.colorScheme)
-        .sheet(isPresented: $showPremium) {
-            SubscriptionSheet(
-                viewModel: container.makeSubscriptionViewModel(),
-                onDismiss: { showPremium = false }
-            )
-            .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .premium:
+                SubscriptionSheet(
+                    viewModel: container.makeSubscriptionViewModel(),
+                    onDismiss: { activeSheet = nil }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+
+            case .customEmail:
+                AddCustomEmailSheet(
+                    domainsList: viewModel.uiState.domains,
+                    isSubscribed: viewModel.uiState.isSubscribed,
+                    activeEmailsList: viewModel.uiState.activeEmailsList,
+                    canRequestAds: viewModel.uiState.canRequestAds,
+                    viewModel: container.makeCustomEmailViewModel(),
+                    onDismiss: { activeSheet = nil },
+                    onAddCustomEmail: { email, reservationID, expiresAt in
+                        viewModel.updateCustomEmail(email: email, reservationID: reservationID, expiresAt: expiresAt)
+                    },
+                    onShowSubscriptionView: { activeSheet = .premium }
+                )
+
+            case .rate:
+                RateAppBottomSheet(
+                    onLater: {
+                        activeSheet = nil
+                        viewModel.setClickedReviewLater(true)
+                    },
+                    onRateNow: {
+                        activeSheet = nil
+                        viewModel.setReviewed(true)
+                        viewModel.logFirebaseEvent(.clickRateNow)
+                        openAppStoreListing()
+                    }
+                )
+                .presentationDetents([.height(460)])
+                .presentationDragIndicator(.hidden)
+            }
         }
-        .sheet(isPresented: $showCustomEmail) {
-            AddCustomEmailSheet(
-                domainsList: viewModel.uiState.domains,
-                isSubscribed: viewModel.uiState.isSubscribed,
-                activeEmailsList: viewModel.uiState.activeEmailsList,
-                canRequestAds: viewModel.uiState.canRequestAds,
-                viewModel: container.makeCustomEmailViewModel(),
-                onDismiss: { showCustomEmail = false },
-                onAddCustomEmail: { email, reservationID, expiresAt in
-                    viewModel.updateCustomEmail(email: email, reservationID: reservationID, expiresAt: expiresAt)
-                },
-                onShowSubscriptionView: {
-                    showCustomEmail = false
-                    showPremium = true
-                }
-            )
+        .fullScreenCover(isPresented: $showFAQ) {
+            FAQView(onBackClick: { showFAQ = false })
         }
         // Ported from Android EmailValidityObserver (ON_RESUME): re-check expiry when the
         // app returns to the foreground, since an email may have expired while backgrounded.
@@ -107,6 +153,13 @@ struct MainScaffold: View {
                 viewModel.initAdsAndConsent(from: vc)
             }
         }
+        // Ported from Android's RateReviewChecker/RateViewController: on foreground-return,
+        // escalate through the custom rate sheet then the native App Store review prompt,
+        // matching Android's custom-sheet-then-in-app-review cooldown logic.
+        .rateReviewChecker(
+            viewModel: viewModel,
+            onShowCustomInapp: { activeSheet = .rate }
+        )
     }
 
     // MARK: - Top bar
@@ -164,7 +217,7 @@ struct MainScaffold: View {
     }
 
     private var premiumItem: some View {
-        Button { showPremium = true } label: {
+        Button { activeSheet = .premium } label: {
             VStack(spacing: 2) {
                 Image(systemName: "crown.fill").font(.system(size: 20))
                 Text(String(localized: "premium")).font(.system(size: 12, weight: .medium))

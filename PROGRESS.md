@@ -14,7 +14,7 @@ Running log of what's been done, per phase. Plan lives in
 | **4** | Custom email | ✅ Done |
 | **5** | Ads + consent | ✅ Done |
 | **6** | Subscriptions (StoreKit 2) | ✅ Done |
-| **7** | Menu, FAQ, Rate, localization | ⬜ Not started |
+| **7** | Menu, FAQ, Rate, localization | ✅ Done |
 | **8** | Notifications + polish | ⬜ Not started |
 
 Legend: ✅ done · 🚧 in progress · ⏳ next · ⬜ not started
@@ -464,10 +464,111 @@ Deferred (documented, not silently dropped):
 - "Restore Purchases" UI — Android doesn't have an explicit restore button either (relies on
   `queryActiveSubscriptions` running on launch); matched, not added as a new feature.
 
-## Phase 7 — Menu, FAQ, Rate, localization ⏳
+## Phase 7 — Menu, FAQ, Rate, localization ✅ (2026-07-03)
 
-_Next._ Full drawer menu (FAQ, Help Center, Blog, Rate us, Try our Web, Support Us, Privacy Policy,
-Terms), FAQ screen (11 Q&A), rate bottom sheet + native in-app review, onboarding carousel + splash,
-AnalyticsTracker + all events (replacing the no-op stubs left across Phases 4–6), full 7-locale
-localization, and swapping SF Symbol stand-ins for the real branded assets (Lottie crown animation,
-custom icons).
+**Deliverable met:** builds clean (Debug + Release, zero warnings), **48/48 tests pass** (2 new),
+and real launches confirm: fresh install → real onboarding artwork renders and routes correctly;
+returning user → lands on Home correctly across 4 repeated relaunches (see bug note below).
+
+Done:
+- **Localization, all 7 locales:** wrote a script to parse the Android app's actual `strings.xml`
+  files (all locales) and generate `Localizable.strings` for `en/es/de/pt/ru/zh-Hans/zh-Hant` —
+  **carrying over the existing professional translations verbatim**, not re-translating. Verified
+  the `values-en` vs. default `values` key diff first (only `admob_app_id`, Android-only, already
+  handled via Phase 5's `Info.plist`) so nothing was missed. Cross-diffed iOS vs. Android key sets:
+  found only 2 iOS-only keys (`home`/`premium` bottom-nav labels) — confirmed via source read that
+  **Android hardcodes these in English regardless of locale** (`BottomNavItem.kt` passes literal
+  `"Home"`/`"Inbox"`/`"Premium"` strings, not `stringResource()`). Deliberately localized them
+  properly in this port rather than matching the apparent oversight — the one intentional
+  "improvement" this phase, documented rather than silent. `knownRegions` updated in the `.pbxproj`.
+- **`FAQView`**: 11 Q&A items, single-expanded-at-a-time (matches Android's `Int` index, not a
+  `Set`). Uses `NSLocalizedString(_:comment:)` for the dynamic `"faq\(i)"`/`"faqa\(i)"` keys —
+  **not** `String(localized:)`, whose string-interpolation initializer treats interpolated
+  segments as *format arguments*, not part of the lookup key (a real mistake caught before it
+  shipped: first attempt used the wrong API and would have silently failed to resolve any FAQ
+  text at runtime).
+- **`AppDrawer`** (full rewrite): header, dark-mode toggle, FAQ/Help Center/Blog/Rate Us menu
+  items, Try-our-Web/Support-Us, conditional Privacy Options row, subscription banner
+  (non-subscribed users), social icon row, Privacy Policy/Terms footer + app version. Social/menu
+  icons use SF Symbol stand-ins for Android's branded drawables (not copied into the asset
+  catalog) — Phase 8 polish.
+- **Onboarding — real artwork, not a stand-in:** converted the Android app's actual onboarding
+  images (4× WebP + 1× JPEG) to PNG via `sips` (confirmed macOS's built-in tool decodes WebP
+  natively) and imported them as proper asset-catalog imagesets, preserving Android's exact page
+  order (`onboard_image_1`, `onboard_image_1_2.jpg`, `onboard_image_3`, `_4`, `_5` — note
+  `onboard_image_2.webp` exists on disk but is genuinely unused dead artwork in Android too,
+  confirmed via the page list — correctly not imported). `OnboardingView` ports the pager,
+  indicator dots, Skip/Previous/Next/Finish controls, and bottom gradient overlay.
+- **`RootView`**: gates Onboarding vs. `MainScaffold` on `isFirstLaunch`, ported from
+  `MainActivity.kt`'s top-level `NavHost`. Found and fixed a real bug before it shipped: Android's
+  `isFirstLaunch` is a **one-shot, non-reactive** fetch on both platforms — Android actually
+  transitions off Onboarding via an *explicit navigation call* from the Finish button, not by that
+  state variable changing. My first draft gated purely on `viewModel.isFirstLaunch`, which would
+  never have flipped after Finish was tapped, leaving the user stuck on Onboarding forever. Fixed
+  with a session-local `onboardingComplete` flag that mirrors Android's one-way-navigation
+  semantics instead.
+- **Confirmed dead code, not ported:** `SplashScreen.kt`'s composable is never referenced by any
+  nav route (`Screen.kt` has no `Splash` destination; only the native Android 12 system splash API
+  is used via `installSplashScreen()`). The iOS analog of that *native* splash is the
+  `UILaunchScreen` already configured in `Info.plist` since Phase 0 — no custom splash view needed.
+- **`RateAppBottomSheet`** + **`RateReviewChecker`**: ported Android's custom-sheet-then-native-
+  review escalation with the same 1h/30-day cooldowns, using `scenePhase` background→active
+  transitions as the iOS analog of `ON_PAUSE`→`ON_RESUME`, and `SKStoreReviewController` as the
+  native review API. Ported the outer gate too (if already reviewed or clicked "later" in *any*
+  prior session, the flow never activates) — checked fresh each call rather than replicating
+  Android's one-time-at-mount gate, since nothing else can flip those flags mid-session so the
+  observable behavior is identical. One deliberate text fix: "Play Store" → "App Store" in the
+  rate copy (platform-correct necessity, not a preserved quirk).
+- **`AnalyticsTracker`**: real event-name/param mapping ported from `AnalyticsEvent.kt`, backed by
+  `os.Logger` rather than the Firebase SDK — no `GoogleService-Info.plist` exists yet (no iOS
+  Firebase app registered), and integrating the real SDK without credentials would crash at
+  `FirebaseApp.configure()`. Same protocol seam as Android (`AnalyticsTracker`), so swapping in a
+  real `FirebaseAnalyticsTracker` later is a single new file + one `AppContainer` line. Wired real
+  logging (replacing every previous phase's stub): `logCustomEmailClicked` (Phase 4),
+  `ClickSubscriptionActivate` (Phase 6, confirmed it fires *before* the `selectedPlan` guard,
+  matching Android exactly), `SubscriptionSuccess` (Phase 6 — placed in
+  `StoreKitBillingDataSource.launchSubscriptionPurchase`'s success path specifically, **not** the
+  general `Transaction.updates` listener, since Android's equivalent only fires off
+  `launchBillingFlow` — logging in the general entitlement stream would over-fire on
+  renewals/restores that aren't a user "click"), plus the drawer's Blog/Web/SupportUs/RateNow
+  events.
+- **Real bug found and fixed post-hoc:** during returning-user verification, one launch (out of 5)
+  showed the Premium subscription sheet auto-open unexpectedly. Not reproduced in 4 follow-up
+  attempts, so likely a one-off artifact of the rapid `defaults write` + relaunch test sequence —
+  but stacking 4 independent `Bool` `@State` + `.sheet(isPresented:)`/`.fullScreenCover(isPresented:)`
+  modifiers on one view is a known SwiftUI conflict source, so refactored `MainScaffold` to a
+  single enum-driven `ActiveSheet` + `.sheet(item:)` for the three sheet-style modals (Premium,
+  Custom Email, Rate), making "at most one sheet active" structurally true rather than relying on
+  discipline across four booleans. FAQ stays its own `.fullScreenCover` (different presentation
+  style; one extra modifier carries no such risk). Re-verified clean across 4 more relaunches after
+  the fix.
+
+Verified:
+- `xcodebuild … build` (Debug + Release) → zero warnings, zero errors.
+- `xcodebuild … test` → **48/48 pass**.
+- Fresh-install launch → real onboarding artwork renders (not a placeholder), first-launch routing
+  correct, no crash.
+- Returning-user launch (×5, including a re-verification pass after the modal-state fix) → lands
+  on Home correctly; only 1/5 showed the described anomaly, not reproduced after the fix.
+- Bonus incidental confirmation: banner ad (Phase 5) genuinely renders in these screenshots
+  ("APNIC… Test mode" — a real AdMob test creative loading), not just compiling.
+
+Deferred (documented, not silently dropped):
+- Real Firebase Analytics SDK — needs a `GoogleService-Info.plist` (no iOS Firebase app registered
+  yet); `AnalyticsTrackerImpl` (os.Logger-backed) is the swap-in-ready seam.
+- Real branded icons (drawer menu/social row) — SF Symbol stand-ins for now.
+- Real App Store id in `openAppStoreListing()` — placeholder id, must be replaced once published.
+- The "Skip" button on Onboarding renders a little low-contrast against the artwork's own baked-in
+  branding near the top — cosmetic, flagged for a Phase 8 polish pass rather than blocking.
+- FAQ/drawer/onboarding/rate-sheet interactive verification (tapping through, not just the
+  auto-rendered states) — joins the existing deferred visual-check backlog (Inbox, Email detail,
+  Custom Email sheet, StoreKit purchase flow).
+
+## Phase 8 — Notifications + polish ⏳
+
+_Next, and final phase._ Per IMPLEMENTATION_PLAN.md §7 (no-backend-changes constraint): local
+notifications for foreground-received mail, best-effort `BGAppRefreshTask` background polling,
+documented background-notification limitation. Plus release polish: real AppIcon, real branded
+icons/Lottie crown swap-in, `SKAdNetworkItems`, `ITSAppUsesNonExemptEncryption`, accessibility pass,
+iPad layout check, and the accumulated manual verification backlog (Inbox/detail/custom-email/
+StoreKit/FAQ/onboarding interactive testing).

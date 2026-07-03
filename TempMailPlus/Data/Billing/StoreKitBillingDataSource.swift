@@ -17,6 +17,7 @@ import Combine
 /// available, so that machinery has no iOS equivalent and is intentionally not ported.
 final class StoreKitBillingDataSource {
     private let dataStore: DataStoreManager
+    private let analyticsTracker: AnalyticsTracker
     private let statusSubject: CurrentValueSubject<SubscriptionStatus, Never>
 
     var subscriptionStatus: AnyPublisher<SubscriptionStatus, Never> {
@@ -25,8 +26,9 @@ final class StoreKitBillingDataSource {
 
     private var updatesTask: Task<Void, Never>?
 
-    init(dataStore: DataStoreManager) {
+    init(dataStore: DataStoreManager, analyticsTracker: AnalyticsTracker) {
         self.dataStore = dataStore
+        self.analyticsTracker = analyticsTracker
         self.statusSubject = CurrentValueSubject(SubscriptionStatus(isSubscribed: dataStore.isSubscribed()))
 
         startTransactionListener()
@@ -129,12 +131,23 @@ final class StoreKitBillingDataSource {
         case .success(let verification):
             guard case .verified(let transaction) = verification else { return }
             await transaction.finish()
+            // Logged here (the direct response to a user-initiated purchase), not in the
+            // Transaction.updates listener below — matching Android's PurchasesUpdatedListener,
+            // which fires specifically off launchBillingFlow, not the general entitlement
+            // stream (which also carries renewals/restores that shouldn't count as a "click").
+            analyticsTracker.logEvent(.subscriptionSuccess(formattedPrice: formattedPrice(for: transaction.productID)))
             updateSubscriptionState(isSubscribed: true, productId: transaction.productID, expirationDate: transaction.expirationDate)
         case .userCancelled, .pending:
             break
         @unknown default:
             break
         }
+    }
+
+    /// Mirrors Android's `formattedPriceForPurchase`: looks up the persisted product price
+    /// string for the given product id (falls back to empty string, matching Android).
+    private func formattedPrice(for productId: String) -> String {
+        dataStore.getSubscriptions().first { $0.productId == productId }?.price ?? ""
     }
 
     // MARK: - State

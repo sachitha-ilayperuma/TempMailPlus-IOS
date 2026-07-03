@@ -37,6 +37,7 @@ final class HomeViewModel: ObservableObject {
     private let adsConsentManager: GoogleMobileAdsConsentManager
     private let rewardedAdManager: RewardedAdManager
     private let appOpenAdManager: AppOpenAdManager
+    private let analyticsTracker: AnalyticsTracker
 
     // Expiry windows (epoch millis), matching Android.
     private let expiredTime = 10 * 60 * 1000
@@ -59,7 +60,8 @@ final class HomeViewModel: ObservableObject {
         onboardRepository: OnboardRepository,
         adsConsentManager: GoogleMobileAdsConsentManager,
         rewardedAdManager: RewardedAdManager,
-        appOpenAdManager: AppOpenAdManager
+        appOpenAdManager: AppOpenAdManager,
+        analyticsTracker: AnalyticsTracker
     ) {
         self.tempEmailUseCases = tempEmailUseCases
         self.dataStore = dataStore
@@ -68,6 +70,7 @@ final class HomeViewModel: ObservableObject {
         self.adsConsentManager = adsConsentManager
         self.rewardedAdManager = rewardedAdManager
         self.appOpenAdManager = appOpenAdManager
+        self.analyticsTracker = analyticsTracker
 
         observeNewEmailFlag()
         observeSubscriptionStatus()
@@ -404,6 +407,24 @@ final class HomeViewModel: ObservableObject {
 
     func completeOnboarding() {
         Task { await onboardRepository.setFirstLaunch(false) }
+    }
+
+    // MARK: - Rate flow (Phase 7)
+
+    func isReviewed() -> Bool { dataStore.isReviewed() }
+    func setReviewed(_ reviewed: Bool) { dataStore.setReviewed(reviewed) }
+
+    func isClickedReviewLater() -> Bool { dataStore.isClickedReviewLater() }
+    func setClickedReviewLater(_ value: Bool) { dataStore.setClickedReviewLater(value) }
+
+    func lastInappReviewTimestamp() -> Int { dataStore.lastInappReviewTimestamp() }
+    func setLastInappReviewTimestamp(_ value: Int) { dataStore.setLastInappReviewTimestamp(value) }
+
+    func lastCustomReviewTimestamp() -> Int { dataStore.lastCustomReviewTimestamp() }
+    func setLastCustomReviewTimestamp(_ value: Int) { dataStore.setLastCustomReviewTimestamp(value) }
+
+    func logFirebaseEvent(_ event: AnalyticsEvent) {
+        analyticsTracker.logEvent(event)
     }
 
     func getEmailDomains() {

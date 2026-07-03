@@ -51,6 +51,8 @@ final class SubscriptionViewModelTests: XCTestCase {
         currencyCode: "USD", freeTrialPeriod: "1 week", billingPeriod: "1 year", description: ""
     )
 
+    private var analytics: FakeAnalyticsTracker!
+
     override func setUp() {
         super.setUp()
         let d = UserDefaults(suiteName: suite)!
@@ -58,7 +60,8 @@ final class SubscriptionViewModelTests: XCTestCase {
         defaults = d
         dataStore = DataStoreManager(defaults: d)
         repo = FakeBillingRepository()
-        viewModel = SubscriptionViewModel(billingRepository: repo, dataStore: dataStore)
+        analytics = FakeAnalyticsTracker()
+        viewModel = SubscriptionViewModel(billingRepository: repo, dataStore: dataStore, analyticsTracker: analytics)
     }
 
     /// `DataStoreManager.subscriptionsSubject` is piped through `.receive(on: RunLoop.main)`
@@ -131,5 +134,14 @@ final class SubscriptionViewModelTests: XCTestCase {
         viewModel.refreshStatus()
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(repo.refreshCallCount, 1)
+    }
+
+    func test_startPurchase_logsClickSubscriptionActivate_evenWithNoSelection() {
+        // Ported exactly from Android: the event fires before the selectedPlan guard.
+        viewModel.startPurchase()
+        XCTAssertEqual(analytics.loggedEvents.count, 1)
+        guard case .clickSubscriptionActivate = analytics.loggedEvents[0] else {
+            return XCTFail("expected .clickSubscriptionActivate event")
+        }
     }
 }

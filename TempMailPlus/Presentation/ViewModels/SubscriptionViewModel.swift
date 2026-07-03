@@ -19,10 +19,12 @@ final class SubscriptionViewModel: ObservableObject {
     @Published private(set) var uiState = SubscriptionUiState()
 
     private let billingRepository: BillingRepository
+    private let analyticsTracker: AnalyticsTracker
     private var cancellables = Set<AnyCancellable>()
 
-    init(billingRepository: BillingRepository, dataStore: DataStoreManager) {
+    init(billingRepository: BillingRepository, dataStore: DataStoreManager, analyticsTracker: AnalyticsTracker) {
         self.billingRepository = billingRepository
+        self.analyticsTracker = analyticsTracker
 
         billingRepository.getSubscriptionStatus()
             .receive(on: RunLoop.main)
@@ -55,7 +57,10 @@ final class SubscriptionViewModel: ObservableObject {
     }
 
     func startPurchase() {
-        // Analytics: Android logs AnalyticsEvent.ClickSubscriptionActivate here (Phase 7 stub).
+        // Ported exactly: Android logs this before checking selectedPlan (the button is
+        // disabled with no selection anyway, so this ordering is effectively a no-op
+        // difference, but matched for fidelity).
+        analyticsTracker.logEvent(.clickSubscriptionActivate)
         guard let selected = uiState.selectedPlan else { return }
         Task {
             uiState.isLoading = true
