@@ -5,11 +5,22 @@ import Foundation
 final class TempEmailRepositoryImpl: TempEmailRepository {
     private let api: EmailApi
     private let deviceIdProvider: DeviceIdProvider
-    private var cachedEmails: [Email] = []
+    private let webSocketManager: WebSocketManager
 
-    init(api: EmailApi, deviceIdProvider: DeviceIdProvider) {
+    // `cachedEmails` may be read (getEmailById, from the detail view model) and written
+    // (getEmailsByAddress) from different tasks; guard it with a lock. (Closes the Phase 1
+    // review carry-in — the WebSocket path never writes it, it only sets the new-email flag.)
+    private let cacheLock = NSLock()
+    private var _cachedEmails: [Email] = []
+    private var cachedEmails: [Email] {
+        get { cacheLock.lock(); defer { cacheLock.unlock() }; return _cachedEmails }
+        set { cacheLock.lock(); _cachedEmails = newValue; cacheLock.unlock() }
+    }
+
+    init(api: EmailApi, deviceIdProvider: DeviceIdProvider, webSocketManager: WebSocketManager) {
         self.api = api
         self.deviceIdProvider = deviceIdProvider
+        self.webSocketManager = webSocketManager
     }
 
     func getTempEmail(loadComEmail: Bool) async throws -> TempEmail {
@@ -72,4 +83,10 @@ final class TempEmailRepositoryImpl: TempEmailRepository {
     func getServerTimestamp() async throws -> Int? {
         try await api.getCurrentTimestamp()
     }
+
+    // MARK: - WebSocket (Phase 3)
+
+    func observeEmails() -> AsyncStream<Email> { webSocketManager.emailStream }
+    func connectWebSocket(email: String) { webSocketManager.connect(email: email) }
+    func disconnectWebSocket() { webSocketManager.disconnect() }
 }

@@ -400,10 +400,26 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    // MARK: - WebSocket (Phase 3 stub)
+    // MARK: - WebSocket (Phase 3)
 
+    private var socketObserveStarted = false
+
+    /// Connects the WebSocket to `email` and (once) starts observing incoming mail.
+    /// On a new message we set the new-email flag, which `observeNewEmailFlag` turns into
+    /// a live inbox reload — matching Android's service → `setHasNewEmail(true)` → reload.
+    /// (Local notifications for backgrounded delivery are Phase 8; see plan §7.)
     func startWebSocketService(email: String) {
-        // Phase 3: start the URLSessionWebSocketTask listener + load emails.
+        tempEmailUseCases.connectWebSocketUseCase(email: email)
+
+        if !socketObserveStarted {
+            socketObserveStarted = true
+            Task { [weak self] in
+                guard let self else { return }
+                for await _ in self.tempEmailUseCases.observeEmailsUseCase() {
+                    self.dataStore.setHasNewEmail(true)
+                }
+            }
+        }
         loadEmails(email)
     }
 }

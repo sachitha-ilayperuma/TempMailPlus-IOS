@@ -23,7 +23,7 @@ struct MainScaffold: View {
                 ZStack {
                     switch tab {
                     case .home:  HomeView(viewModel: viewModel, onOpenSubscription: { showPremium = true })
-                    case .inbox: InboxPlaceholderView()
+                    case .inbox: InboxView(viewModel: viewModel)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -54,6 +54,13 @@ struct MainScaffold: View {
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
                 viewModel.checkAndHandleEmailExpiration()
+            }
+        }
+        // Reactively (re)connect the WebSocket when the selected email changes — ports
+        // Android MainScaffold's LaunchedEffect(tempEmail.email) { startWebSocketService }.
+        .onChange(of: viewModel.uiState.tempEmail?.email) { email in
+            if let email, !email.isEmpty {
+                viewModel.startWebSocketService(email: email)
             }
         }
     }

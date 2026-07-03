@@ -43,3 +43,11 @@
 "inbox" = "Inbox";
 "home" = "Home";
 "premium" = "Premium";
+
+/* Inbox + Email detail (Phase 3) */
+"no_email" = "No Email";
+"inbox_is_empty" = "Your inbox is empty";
+"waiting_for_new_emails" = "Waiting for new emails to arrive....";
+"attachments" = "Attachments";
+"download_started" = "Download Started";
+"listening_for_mails" = "Listening for new mails...";

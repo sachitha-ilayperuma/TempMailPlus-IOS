@@ -61,6 +61,22 @@ struct SyncServerTimeUseCase {
     }
 }
 
+// WebSocket use cases (Phase 3).
+struct ObserveEmailsUseCase {
+    let repository: TempEmailRepository
+    func callAsFunction() -> AsyncStream<Email> { repository.observeEmails() }
+}
+
+struct ConnectWebSocketUseCase {
+    let repository: TempEmailRepository
+    func callAsFunction(email: String) { repository.connectWebSocket(email: email) }
+}
+
+struct DisconnectWebSocketUseCase {
+    let repository: TempEmailRepository
+    func callAsFunction() { repository.disconnectWebSocket() }
+}
+
 struct ValidateUsernameUseCase {
     let validator: UsernameValidator
     let resourceProvider: ResourceProvider
@@ -107,8 +123,7 @@ struct ValidateDailyEmailLimitUseCase {
     }
 }
 
-/// Ported from Android `TempEmailUseCases` aggregator. WebSocket use cases
-/// (connect/disconnect/observe) are added in Phase 3.
+/// Ported from Android `TempEmailUseCases` aggregator.
 struct TempEmailUseCases {
     let generateTempEmail: GenerateTempEmailUseCase
     let activateEmail: ActivateEmailUseCase
@@ -118,4 +133,7 @@ struct TempEmailUseCases {
     let getActiveCustomEmailsUseCase: GetActiveCustomEmailsUseCase
     let createCustomEmailUseCase: CreateCustomEmailUseCase
     let syncServerTimeUseCase: SyncServerTimeUseCase
+    let observeEmailsUseCase: ObserveEmailsUseCase
+    let connectWebSocketUseCase: ConnectWebSocketUseCase
+    let disconnectWebSocketUseCase: DisconnectWebSocketUseCase
 }

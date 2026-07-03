@@ -4,7 +4,7 @@ import Foundation
 // WebSocket methods (Android's `observeEmails`/`connect`/`disconnect`) are added to
 // `TempEmailRepository` in Phase 3. Billing (`BillingRepository`) is added in Phase 6.
 
-/// Android `TempEmailRepository` — REST surface (Phase 1).
+/// Android `TempEmailRepository` — REST surface (Phase 1) + WebSocket (Phase 3).
 protocol TempEmailRepository {
     func getTempEmail(loadComEmail: Bool) async throws -> TempEmail
     func activateEmail(email: String, reservationId: String) async throws
@@ -14,6 +14,11 @@ protocol TempEmailRepository {
     func addCustomEmail(prefix: String, domain: String) async throws -> CustomEmailResponse
     func getActiveCustomEmailsList() async throws -> [ActiveCustomEmail]
     func getServerTimestamp() async throws -> Int?
+
+    // WebSocket (Phase 3)
+    func observeEmails() -> AsyncStream<Email>
+    func connectWebSocket(email: String)
+    func disconnectWebSocket()
 }
 
 /// Android `TimeRepository`.

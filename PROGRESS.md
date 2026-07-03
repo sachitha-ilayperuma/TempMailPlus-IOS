@@ -10,7 +10,7 @@ Running log of what's been done, per phase. Plan lives in
 | **0** | Bootstrap: project, theme, fonts, DI skeleton, themed shell | ✅ Done |
 | **1** | Domain + Data core (models, API, decryption, DataStore, tests) | ✅ Done |
 | **2** | Home flow | ✅ Done |
-| **3** | Inbox + Email detail + realtime WebSocket | ⬜ Not started |
+| **3** | Inbox + Email detail + realtime WebSocket | ✅ Done |
 | **4** | Custom email | ⬜ Not started |
 | **5** | Ads + consent | ⬜ Not started |
 | **6** | Subscriptions (StoreKit 2) | ⬜ Not started |
@@ -171,7 +171,73 @@ Carry-ins:
 - **[Phase 3]** `TempEmailRepositoryImpl.cachedEmails` unsynchronized (still open).
 - **[Phase 3]** Wire `startWebSocketService` (currently just calls `loadEmails`).
 
-## Phase 3 — Inbox + Email detail + realtime ⏳
+## Phase 3 — Inbox + Email detail + realtime ✅ (2026-07-02)
 
-_Next._ `WebSocketManager` (`URLSessionWebSocketTask`), Inbox list + address dropdown +
-swipe-to-delete + empty/waiting states + new-email badge, Email detail (HTML + attachments).
+**Deliverable met:** builds clean, 29/29 tests pass, WebSocket connects without crashing, and Home
+was re-verified generating a real backend email after the WS wiring landed (`…@vecroniyt.com`).
+
+Done:
+- **`WebSocketManager`** (`URLSessionWebSocketTask`, replacing OkHttp): decrypts the WS URL via the
+  same `SecretConstants`/`Decryptor`, sends `subscribeEmails` on connect, parses
+  `newEmailReceived` into `Email` via an `AsyncStream`. `connect()` now drops any prior socket
+  first (Android's service does this implicitly by reconnecting on email change).
+- **`TempEmailRepository`** extended with `observeEmails`/`connectWebSocket`/`disconnectWebSocket`;
+  new `ObserveEmailsUseCase`/`ConnectWebSocketUseCase`/`DisconnectWebSocketUseCase`, folded into
+  `TempEmailUseCases`.
+- **`HomeViewModel.startWebSocketService`** now really connects the socket and observes it once;
+  incoming mail sets `hasNewEmail`, which (via the Phase 2 observer) triggers a live inbox reload —
+  mirrors Android's service → notification-flag → reload chain. (Local/background notifications are
+  out of scope per plan §7 — no backend push.)
+- **`MainScaffold`** reactively calls `startWebSocketService` via `onChange(of: tempEmail.email)` —
+  ports Android's `LaunchedEffect(tempEmail.email)`.
+- **`InboxView`** (replaces the Phase 2 placeholder): dropdown header + overlay (normal/custom
+  email sections, ported from `EmailDropdownHeader`/`EmailDropdownOverlay`), email list (`List` +
+  `.refreshable`, sorted newest-first), empty state, expired state (`ConnectionLost`), loading
+  spinner, tap-to-open detail.
+- **`EmailDetailView`** + **`EmailDetailViewModel`**: subject, sender avatar/name/address/time,
+  `HTMLView` (WKWebView) body, expandable attachments card that opens URLs via
+  `UIApplication.open` (iOS analog of Android's DownloadManager).
+- **`HTMLView`** (WKWebView wrapper, light/dark aware via `prefers-color-scheme`) replaces Android's
+  `HtmlText`; `String.strippedHTML` gives inbox-row previews without a full HTML parse per row.
+- **Carry-ins closed:**
+  - `TempEmailRepositoryImpl.cachedEmails` is now guarded by an `NSLock` (read/write computed
+    property), closing the Phase 1/2 concurrency carry-in now that the repository has a second
+    caller path (WebSocket-adjacent code).
+  - `startWebSocketService` is fully wired (was a stub in Phase 2).
+- **`AppContainer`**: constructs `WebSocketManager`, wires it into the repository, adds
+  `makeEmailDetailViewModel()` factory.
+
+Investigated / confirmed non-issue:
+- Android's `SwipeToDeleteButton`/`DeleteBottomSheet` are **dead code** — `DeleteBottomSheet` is
+  never invoked anywhere in the Android app, and `InboxScreen.kt`'s `onDeleteEmail` callback is a
+  literal no-op. Per-email swipe-to-delete is not a live Android feature, so the iOS port
+  intentionally does not implement it either — this is faithful parity, not a gap. (The
+  `IMPLEMENTATION_PLAN.md` Phase 3 description overstated this based on file names; noting here for
+  the record rather than editing the plan retroactively.)
+
+Verified:
+- `xcodebuild … build` (Debug + Release) → zero warnings, zero errors.
+- `xcodebuild … test` → **29/29 pass**.
+- Clean-install launch → real temp email generated from the live backend
+  (`brxva00961@vecroniyt.com`), Home renders correctly, process stays alive after the WebSocket
+  connects (no crash from the new socket/task code).
+
+**Verification gap (honest note):** the Inbox tab, dropdown overlay, and Email detail screen were
+code-reviewed against the Android source and compile cleanly, but were **not visually screenshotted
+in this session** — computer-use access (needed to tap simulator tabs) was requested and declined.
+Home was re-confirmed working end-to-end after the Phase 3 wiring landed, which exercises the same
+`AppContainer`/`HomeViewModel` machinery the Inbox screen depends on, but the Inbox-specific SwiftUI
+layout (dropdown overlay positioning, list rendering, sheet presentation) has only been verified by
+build success + code review, not by looking at it. Flag for manual check in Xcode, or grant
+computer-use in a future session to close this out.
+
+Deferred to their phases (hooks in place):
+- Ad gating on the expired-state refresh (Phase 5).
+- Branded empty-inbox/logo icons use SF Symbols as stand-ins (Phase 7 polish).
+- Full HTML CSS parity with Android's `HtmlText` (Phase 7 polish, if needed after visual QA).
+
+## Phase 4 — Custom email ⏳
+
+_Next._ `CustomEmailViewModel` (validation, create, free-user 1-per-25h gate, rewarded-ad /
+subscription branching — ad gating itself lands in Phase 5), add-custom-email bottom sheet
+(username field + domain picker), wiring `getEmailDomains`/`custom-email/create`/`custom-email/list`.

@@ -54,7 +54,11 @@ final class AppContainer: ObservableObject {
         let deviceIdProvider = DeviceIdProviderImpl(dataStore: dataStore)
         self.deviceIdProvider = deviceIdProvider
 
-        let tempEmailRepository = TempEmailRepositoryImpl(api: api, deviceIdProvider: deviceIdProvider)
+        let tempEmailRepository = TempEmailRepositoryImpl(
+            api: api,
+            deviceIdProvider: deviceIdProvider,
+            webSocketManager: WebSocketManager()
+        )
         self.tempEmailRepository = tempEmailRepository
         let timeRepository = TimeRepositoryImpl(api: api, dataStore: dataStore)
         self.timeRepository = timeRepository
@@ -71,7 +75,10 @@ final class AppContainer: ObservableObject {
             getEmailDomainsUseCase: GetEmailDomainsUseCase(repository: tempEmailRepository),
             getActiveCustomEmailsUseCase: GetActiveCustomEmailsUseCase(repository: tempEmailRepository),
             createCustomEmailUseCase: CreateCustomEmailUseCase(repository: tempEmailRepository),
-            syncServerTimeUseCase: SyncServerTimeUseCase(repository: timeRepository)
+            syncServerTimeUseCase: SyncServerTimeUseCase(repository: timeRepository),
+            observeEmailsUseCase: ObserveEmailsUseCase(repository: tempEmailRepository),
+            connectWebSocketUseCase: ConnectWebSocketUseCase(repository: tempEmailRepository),
+            disconnectWebSocketUseCase: DisconnectWebSocketUseCase(repository: tempEmailRepository)
         )
         self.validateUsernameUseCase = ValidateUsernameUseCase(
             validator: UsernameValidator(),
@@ -87,5 +94,11 @@ final class AppContainer: ObservableObject {
             timeProvider: timeProvider,
             onboardRepository: onboardRepository
         )
+    }
+
+    /// Factory for the email-detail view model (resolves the email from the shared
+    /// repository cache via `getEmailById`).
+    func makeEmailDetailViewModel() -> EmailDetailViewModel {
+        EmailDetailViewModel(getEmailByIDUseCase: GetEmailByIDUseCase(repository: tempEmailRepository))
     }
 }
