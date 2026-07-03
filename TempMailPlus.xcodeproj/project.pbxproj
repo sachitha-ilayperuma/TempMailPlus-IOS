@@ -47,6 +47,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				App/Info.plist,
+				TempMailPlus.storekit,
 			);
 			target = AA00000000000000000000A4;
 		};

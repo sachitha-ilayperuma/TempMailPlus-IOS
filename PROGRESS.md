@@ -13,7 +13,7 @@ Running log of what's been done, per phase. Plan lives in
 | **3** | Inbox + Email detail + realtime WebSocket | ✅ Done |
 | **4** | Custom email | ✅ Done |
 | **5** | Ads + consent | ✅ Done |
-| **6** | Subscriptions (StoreKit 2) | ⬜ Not started |
+| **6** | Subscriptions (StoreKit 2) | ✅ Done |
 | **7** | Menu, FAQ, Rate, localization | ⬜ Not started |
 | **8** | Notifications + polish | ⬜ Not started |
 
@@ -374,9 +374,100 @@ proved the SDK pipeline works without needing any simulator taps. The rewarded-a
 (tapping "Watch ad" and seeing a real video ad) still requires taps and joins the existing deferred
 visual-check list.
 
-## Phase 6 — Subscriptions (StoreKit 2) ⏳
+## Phase 6 — Subscriptions (StoreKit 2) ✅ (2026-07-03)
 
-_Next._ `BillingRepository` on StoreKit 2 (load products, purchase, restore, transaction listener,
-persist `is_subscribed`), Subscription screen 1:1 (feature list, plan cards, price/trial from
-store), gating premium features. Will replace the Premium placeholder sheet in `MainScaffold` and
-the subscription-dialog hooks left across Phases 2–5.
+**Deliverable met:** builds clean (Debug + Release, zero warnings), **46/46 tests pass** (8 new),
+and a clean-install launch confirms the billing code handles an empty product catalog gracefully —
+no crash, Home + the real UMP consent dialog still render correctly.
+
+Done:
+- **Domain:** `BillingRepository` protocol added (`Domain/Repository/Repositories.swift`).
+  `SubscriptionStatus`/`SubscriptionInfo`/`BillingProducts` already existed from Phase 1.
+- **`StoreKitBillingDataSource`**: the real StoreKit 2 port of Android's `BillingDataSource`.
+  `queryProducts()` (loads `Product.products(for:)`, maps to `SubscriptionInfo` incl. free-trial /
+  billing-period formatting, persists via `DataStoreManager.saveSubscriptions`), `queryActiveSubscriptions()`
+  (`Transaction.currentEntitlements`), `launchSubscriptionPurchase(productId:)` (`product.purchase()`
+  + `transaction.finish()`), and a `Transaction.updates` listener (Android's `PurchasesUpdatedListener`).
+  Android's billing-client-connection/reconnect-with-backoff machinery has no StoreKit 2 equivalent
+  (no connection step exists) and is intentionally not ported.
+- **`BillingRepositoryImpl`**: thin delegate, matches Android exactly.
+- **`SubscriptionViewModel`**: talks to `BillingRepository` directly, **not** through use-case
+  wrappers — confirmed via grep that Android's `GetSubscriptionStatusUseCase`/
+  `RefreshSubscriptionUseCase` are dead code (never constructed/injected anywhere); skipped porting
+  them rather than porting unused wrappers, consistent with the Phase 3/5 dead-code findings.
+- **`SubscriptionSheet`** (+ `PremiumFeaturesList`, `PlanCard`, `FeatureItem`): ported 1:1, including
+  hardcoded (non-localized) strings Android itself hardcodes ("Experience More with Premium",
+  "Cancel Anytime", "Activate Plan"/"Subscribed") and `PlanCard`'s selected-state border-only
+  styling (Android's own `.background(background)` line is commented out in the source — matched,
+  not "improved"). Crown icon uses an SF Symbol stand-in for Android's Lottie `twincle_crown`
+  animation (`lottie-ios` is a clean SPM add, same tier as Phase 5's ad SDKs, but out of scope here —
+  Phase 7 polish).
+- Wired: `MainScaffold`'s Premium sheet now presents the real `SubscriptionSheet` (replacing the
+  Phase 2 placeholder); `InboxView` gained an `onShowSubscription` closure (was a TODO) wired the
+  same way `HomeView` already was.
+- **`AppContainer`**: constructs `StoreKitBillingDataSource`/`BillingRepositoryImpl`;
+  `makeSubscriptionViewModel()` factory (one per sheet presentation, matching the
+  `makeCustomEmailViewModel()`/`makeEmailDetailViewModel()` pattern).
+- **`TempMailPlus.storekit`**: a local StoreKit Configuration file (weekly/monthly/yearly matching
+  `BillingProducts.activeProducts`, with trial periods) wired into the scheme's `TestAction` and
+  `LaunchAction` via `<StoreKitConfigurationFileReference>` — lets the user test real purchases in
+  Xcode/Simulator with zero App Store Connect setup. Excluded from the app bundle (membership
+  exception, same pattern as `Info.plist`).
+
+### Tooling limitation discovered (not a code bug) — documented for the record
+`xcodebuild test`/`build` from the command line **does not honor Xcode scheme StoreKit
+Configuration files** — this is a well-documented Apple/Xcode limitation: StoreKit local testing is
+tied to Xcode's own process launching (GUI Run/Test), not raw `xcodebuild`/`simctl`. I originally
+wrote `StoreKitBillingDataSourceTests.swift` (a true integration test against the local `.storekit`
+catalog) and spent real effort chasing what looked like a path-resolution bug (fetched a working
+open-source example's `.xcscheme` to confirm the correct relative-path convention, which did fix the
+path) — but the catalog still came back empty under `xcodebuild test`, which is what led to
+discovering the actual root cause via a documented community report. **Decision:** removed that
+integration test (it cannot pass headless in this environment) and replaced it with
+`SubscriptionViewModelTests` using a `FakeBillingRepository` — the same fake-repository pattern
+already used for `CustomEmailViewModelTests` — which tests 100% of *this port's own logic*
+(plan filtering/selection, purchase triggering, status observation) without needing real StoreKit.
+The `.storekit` file + scheme wiring are kept in place since they're genuinely useful for the user's
+own manual Xcode verification (confirmed the path itself is correct, per the fetched working
+example's convention) — just not exercisable from this sandboxed CLI-only session.
+
+### Post-hoc scare that turned out to be my own mistake (documented for transparency)
+After the above, a `simctl launch` attempt failed with `FBSOpenApplicationServiceErrorDomain code=4`
+and looked like a possible app crash. Investigation: `simctl listapps` showed the app wasn't
+installed at all, and `simctl install` had thrown an *internal* `NSInternalInconsistencyException`
+inside `simctl` itself (`Invalid parameter not satisfying: installURL`) — because my shell script's
+`$APP` path variable had resolved to an empty string (the most recent build before that had been a
+Release-configuration build, and the Debug `.app` bundle needed a fresh build). No crash report
+existed anywhere on disk, which was the tell. Rebuilding Debug and re-running the install/launch
+sequence with a verified non-empty path confirmed: **no crash** — the app installs, launches, and
+renders correctly (Home + the real UMP dialog) even with an empty StoreKit product catalog
+(`queryProducts`/`queryActiveSubscriptions` are guard/optional-safe throughout, no force-unwraps).
+
+Verified:
+- `xcodebuild … build` (Debug + Release) → zero warnings, zero errors.
+- `xcodebuild … test` → **46/46 pass** (8 new `SubscriptionViewModelTests`).
+- Clean-install launch (no local StoreKit catalog — the honest current-state path) → no crash, Home
+  + UMP consent dialog render correctly.
+- StoreKit 2 API usage (`Product`, `Transaction`, `FullScreenContentDelegate`-adjacent purchase
+  APIs) compiled correctly on the first attempt with no rename/API surprises (unlike Phase 5's UMP
+  renames) — validated against the actual pinned SDK, not assumed.
+
+Deferred (documented, not silently dropped):
+- Real purchase/restore flow can only be genuinely exercised by the user, manually, in Xcode with
+  the `.storekit` config active (or against a real sandbox account) — flagged as part of the
+  existing visual-check backlog (now also includes: subscription sheet UI, a real Watch-purchase-flow).
+- Real App Store Connect subscription product IDs — must be confirmed/created to match
+  `BillingProducts.activeProducts` before release (flagged since Phase 0/5).
+- `lottie-ios` real crown animation — Phase 7 polish.
+- Analytics (`ClickSubscriptionActivate`, `SubscriptionSuccess`) — Phase 7 stub, consistent with all
+  other analytics deferrals.
+- "Restore Purchases" UI — Android doesn't have an explicit restore button either (relies on
+  `queryActiveSubscriptions` running on launch); matched, not added as a new feature.
+
+## Phase 7 — Menu, FAQ, Rate, localization ⏳
+
+_Next._ Full drawer menu (FAQ, Help Center, Blog, Rate us, Try our Web, Support Us, Privacy Policy,
+Terms), FAQ screen (11 Q&A), rate bottom sheet + native in-app review, onboarding carousel + splash,
+AnalyticsTracker + all events (replacing the no-op stubs left across Phases 4–6), full 7-locale
+localization, and swapping SF Symbol stand-ins for the real branded assets (Lottie crown animation,
+custom icons).

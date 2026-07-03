@@ -68,3 +68,12 @@
 
 /* Ads / consent (Phase 5) */
 "show_privacy_options" = "Show Privacy Options Form";
+
+/* Subscription (Phase 6) */
+"subscription_point_1" = "Create unlimited .Com email addresses";
+"subscription_point_2" = "Generate 5 Custom emails per day";
+"subscription_point_3" = "Extended email life: 10-minute auto-expiry (";
+"subscription_sub_point_3" = "5 minutes";
+"subscription_point_4" = "Enjoy a 100% ad-free experience";
+"subscription_point_5" = "Multiple inbox support";
+"subscription_point_6" = "Custom domain support (coming soon)";

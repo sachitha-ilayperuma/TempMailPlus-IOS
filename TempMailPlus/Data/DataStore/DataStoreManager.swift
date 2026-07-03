@@ -22,11 +22,16 @@ final class DataStoreManager {
     // in-process (no separate service process like Android).
     let hasNewEmailSubject: CurrentValueSubject<Bool, Never>
     let isSubscribedSubject: CurrentValueSubject<Bool, Never>
+    let subscriptionsSubject: CurrentValueSubject<[SubscriptionInfo], Never>
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.hasNewEmailSubject = CurrentValueSubject(defaults.bool(forKey: PreferenceKeys.hasNewEmail))
         self.isSubscribedSubject = CurrentValueSubject(defaults.bool(forKey: PreferenceKeys.isSubscribed))
+        let decoder = JSONDecoder()
+        let storedPlans: [SubscriptionInfo] = defaults.data(forKey: PreferenceKeys.subscriptionInfo)
+            .flatMap { try? decoder.decode([SubscriptionInfo].self, from: $0) } ?? []
+        self.subscriptionsSubject = CurrentValueSubject(storedPlans)
     }
 
     // MARK: - Theme
@@ -98,6 +103,7 @@ final class DataStoreManager {
         if let data = try? encoder.encode(subscriptions) {
             defaults.set(data, forKey: PreferenceKeys.subscriptionInfo)
         }
+        subscriptionsSubject.send(subscriptions)
     }
     func getSubscriptions() -> [SubscriptionInfo] {
         guard let data = defaults.data(forKey: PreferenceKeys.subscriptionInfo),

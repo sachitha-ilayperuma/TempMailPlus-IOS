@@ -1,8 +1,7 @@
 import Foundation
+import Combine
 
 // Repository protocols ported from Android `domain/repository/*`.
-// WebSocket methods (Android's `observeEmails`/`connect`/`disconnect`) are added to
-// `TempEmailRepository` in Phase 3. Billing (`BillingRepository`) is added in Phase 6.
 
 /// Android `TempEmailRepository` — REST surface (Phase 1) + WebSocket (Phase 3).
 protocol TempEmailRepository {
@@ -45,4 +44,11 @@ protocol EmailLimitRepository {
 protocol OnboardRepository {
     func isFirstLaunch() async -> Bool
     func setFirstLaunch(_ isFirst: Bool) async
+}
+
+/// Android `BillingRepository` (Phase 6, backed by StoreKit 2).
+protocol BillingRepository {
+    func getSubscriptionStatus() -> AnyPublisher<SubscriptionStatus, Never>
+    func refreshSubscriptionStatus() async
+    func startSubscriptionPurchase(productId: String) async
 }

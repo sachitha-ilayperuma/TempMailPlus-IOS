@@ -1,0 +1,146 @@
+{
+  "identifier" : "ED951242-95E4-43CE-BDD4-FEA2E4F714F2",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "6740000000",
+    "_developerTeamID" : "0000000000",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "A0852E0B-8E57-4751-A810-A028CD543968",
+      "localizations" : [],
+      "name" : "Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "56C9C1FA-4906-404E-B84C-2D29CF370634",
+          "introductoryOffer" : {
+            "internalID" : "AA6C4879-9B33-4C36-9C0C-63D1A93FDB49",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
+          "localizations" : [
+            {
+              "description" : "Weekly Premium access to TempMailPlus.",
+              "displayName" : "Weekly Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "weeklypremium_march2026",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Weekly Premium",
+          "subscriptionGroupID" : "A0852E0B-8E57-4751-A810-A028CD543968",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "A8B27B91-0064-4A4C-A534-9B3F61A9EF70",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Monthly Premium access to TempMailPlus.",
+              "displayName" : "Monthly Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "monthly.premium_v2",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly Premium",
+          "subscriptionGroupID" : "A0852E0B-8E57-4751-A810-A028CD543968",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "39.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6A28EBFD-F1ED-4489-AE40-1ED2D755104C",
+          "introductoryOffer" : {
+            "internalID" : "F7C6A9C1-3E4A-4C4E-9C7B-3D2A1B5E8F60",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Annual Premium access to TempMailPlus.",
+              "displayName" : "Annual Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "annual_permium_v2",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual Premium",
+          "subscriptionGroupID" : "A0852E0B-8E57-4751-A810-A028CD543968",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

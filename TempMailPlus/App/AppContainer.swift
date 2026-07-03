@@ -41,6 +41,9 @@ final class AppContainer: ObservableObject {
     let rewardedAdManager: RewardedAdManager
     let appOpenAdManager: AppOpenAdManager
 
+    // Billing (Phase 6)
+    let billingRepository: BillingRepository
+
     // View models (shared across screens, like the Android activity-scoped HomeViewModel)
     let homeViewModel: HomeViewModel
 
@@ -99,6 +102,10 @@ final class AppContainer: ObservableObject {
         self.rewardedAdManager = rewardedAdManager
         self.appOpenAdManager = AppOpenAdManager()
 
+        self.billingRepository = BillingRepositoryImpl(
+            dataSource: StoreKitBillingDataSource(dataStore: dataStore)
+        )
+
         self.homeViewModel = HomeViewModel(
             tempEmailUseCases: tempEmailUseCases,
             dataStore: dataStore,
@@ -126,5 +133,11 @@ final class AppContainer: ObservableObject {
             timeProvider: timeProvider,
             rewardedAdManager: rewardedAdManager
         )
+    }
+
+    /// Factory for the subscription view model (one per sheet presentation, like Android's
+    /// `hiltViewModel()`-scoped `SubscriptionViewModel`).
+    func makeSubscriptionViewModel() -> SubscriptionViewModel {
+        SubscriptionViewModel(billingRepository: billingRepository, dataStore: dataStore)
     }
 }

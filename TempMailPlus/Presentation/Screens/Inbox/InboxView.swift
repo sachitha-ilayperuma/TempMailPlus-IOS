@@ -13,6 +13,7 @@ private struct EmailID: Identifiable { let id: String }
 /// app (ported faithfully, see PROGRESS.md Phase 5).
 struct InboxView: View {
     @ObservedObject var viewModel: HomeViewModel
+    var onShowSubscription: () -> Void = {}
     @EnvironmentObject private var container: AppContainer
 
     @State private var dropdownExpanded = false
@@ -87,7 +88,7 @@ struct InboxView: View {
                 },
                 onSubscriptionClicked: {
                     showCountdownAdSheet = false
-                    // Phase 6: route to the real subscription flow (Home already has this hook).
+                    onShowSubscription()
                 }
             )
         }

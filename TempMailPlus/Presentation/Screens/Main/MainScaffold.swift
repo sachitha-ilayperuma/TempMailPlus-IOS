@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Ported from Android `presentation/screen/main/MainScaffold.swift` (top bar + bottom
-/// navigation + modal drawer + nav host). Home/Inbox are tabs; Premium is an action that
-/// opens the subscription flow (Phase 6). App-open/consent/ad init (Phase 5) hooks off
+/// navigation + modal drawer + nav host). Home/Inbox are tabs; Premium opens the real
+/// StoreKit 2 subscription flow (Phase 6). App-open/consent/ad init (Phase 5) hooks off
 /// `viewModel.isInitCalled`.
 struct MainScaffold: View {
     @ObservedObject var viewModel: HomeViewModel
@@ -30,7 +30,8 @@ struct MainScaffold: View {
                             onOpenCustomEmail: { showCustomEmail = true },
                             onOpenSubscription: { showPremium = true }
                         )
-                    case .inbox: InboxView(viewModel: viewModel)
+                    case .inbox:
+                        InboxView(viewModel: viewModel, onShowSubscription: { showPremium = true })
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,7 +63,12 @@ struct MainScaffold: View {
         .animation(.easeInOut(duration: 0.25), value: drawerOpen)
         .preferredColorScheme(theme.colorScheme)
         .sheet(isPresented: $showPremium) {
-            premiumPlaceholder
+            SubscriptionSheet(
+                viewModel: container.makeSubscriptionViewModel(),
+                onDismiss: { showPremium = false }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showCustomEmail) {
             AddCustomEmailSheet(
@@ -166,19 +172,6 @@ struct MainScaffold: View {
             .foregroundStyle(AppColors.darkYellow)
             .frame(maxWidth: .infinity)
         }
-    }
-
-    // MARK: - Premium placeholder (Phase 6)
-    private var premiumPlaceholder: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "crown.fill").font(.system(size: 48)).foregroundStyle(AppColors.darkYellow)
-            Text("Premium").font(.titleLarge).foregroundStyle(AppColors.onBackground)
-            Text("Subscriptions (StoreKit 2) arrive in Phase 6.")
-                .font(.labelSmall).foregroundStyle(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(32)
-        .presentationDetents([.height(240)])
     }
 
     // MARK: - Drawer control
