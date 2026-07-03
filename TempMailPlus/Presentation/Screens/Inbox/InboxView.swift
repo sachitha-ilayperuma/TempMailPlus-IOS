@@ -3,13 +3,21 @@ import SwiftUI
 private struct EmailID: Identifiable { let id: String }
 
 /// Ported from Android `presentation/screen/inbox/InboxScreen.kt` (InboxScreenNew).
-/// Ad gating on the expired-refresh (Phase 5) is deferred — regenerates directly.
+///
+/// NOTE (verified against the Android source, not "fixed"): the expired-state refresh
+/// here always shows the watch-ad sheet, and tapping "watch ad" always regenerates the
+/// email directly **without invoking the real ad SDK at all** — unlike Home's equivalent
+/// flow, which does call the real rewarded ad. Android's `InboxScreen.kt` wires
+/// `onAdCountdownFinished = { generateNewEmail(false) }` unconditionally, with no
+/// `isSubscribed` or `canRequestAds` check. This is a genuine inconsistency in the source
+/// app (ported faithfully, see PROGRESS.md Phase 5).
 struct InboxView: View {
     @ObservedObject var viewModel: HomeViewModel
     @EnvironmentObject private var container: AppContainer
 
     @State private var dropdownExpanded = false
     @State private var selected: EmailID?
+    @State private var showCountdownAdSheet = false
 
     private var s: HomeUiState { viewModel.uiState }
     private var currentEmail: String? { s.tempEmail?.email }
@@ -23,7 +31,7 @@ struct InboxView: View {
             VStack(spacing: 0) {
                 if s.isExpired {
                     ConnectionLost(isSubscribed: s.isSubscribed) {
-                        viewModel.generateNewEmail(loadComEmail: false) // Phase 5: ad gate
+                        showCountdownAdSheet = true
                     }
                 } else {
                     EmailDropdownHeader(
@@ -67,6 +75,21 @@ struct InboxView: View {
         .onAppear { viewModel.clearNewEmailFlag() }
         .fullScreenCover(item: $selected) { item in
             EmailDetailView(emailId: item.id, viewModel: container.makeEmailDetailViewModel())
+        }
+        .sheet(isPresented: $showCountdownAdSheet) {
+            WatchAdBottomSheet(
+                title: String(localized: "watch_ad_title"),
+                description: String(localized: "watch_ad_desc"),
+                onWatchAd: {
+                    // Faithful to Android: no real ad call here, see the type-level note above.
+                    viewModel.generateNewEmail(loadComEmail: false)
+                    showCountdownAdSheet = false
+                },
+                onSubscriptionClicked: {
+                    showCountdownAdSheet = false
+                    // Phase 6: route to the real subscription flow (Home already has this hook).
+                }
+            )
         }
     }
 

@@ -46,7 +46,15 @@ struct MainScaffold: View {
                     .onTapGesture { closeDrawer() }
                     .transition(.opacity)
 
-                AppDrawer(onClose: closeDrawer)
+                AppDrawer(
+                    isPrivacyOptionsRequired: viewModel.uiState.isPrivacyOptionsRequired,
+                    onShowPrivacyOptionsForm: {
+                        if let vc = UIKitBridge.rootViewController {
+                            viewModel.showPrivacyOptionsForm(from: vc) { _ in }
+                        }
+                    },
+                    onClose: closeDrawer
+                )
                     .frame(width: 300)
                     .transition(.move(edge: .leading))
             }
@@ -61,6 +69,7 @@ struct MainScaffold: View {
                 domainsList: viewModel.uiState.domains,
                 isSubscribed: viewModel.uiState.isSubscribed,
                 activeEmailsList: viewModel.uiState.activeEmailsList,
+                canRequestAds: viewModel.uiState.canRequestAds,
                 viewModel: container.makeCustomEmailViewModel(),
                 onDismiss: { showCustomEmail = false },
                 onAddCustomEmail: { email, reservationID, expiresAt in
@@ -84,6 +93,12 @@ struct MainScaffold: View {
         .onChange(of: viewModel.uiState.tempEmail?.email) { email in
             if let email, !email.isEmpty {
                 viewModel.startWebSocketService(email: email)
+            }
+        }
+        // Ported from Android's `LaunchedEffect(Unit) { if (!viewModel.isInitCalled) initAdsAndConsent(activity) }`.
+        .onAppear {
+            if !viewModel.isInitCalled, let vc = UIKitBridge.rootViewController {
+                viewModel.initAdsAndConsent(from: vc)
             }
         }
     }

@@ -11,6 +11,11 @@
 		AA00000000000000000000C2 /* TempMailPlusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TempMailPlusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXBuildFile section */
+		AA00000000000000000000E5 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000E2 /* GoogleMobileAds */; };
+		AA00000000000000000000E6 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000E4 /* GoogleUserMessagingPlatform */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AA00000000000000000000D2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA00000000000000000000E5 /* GoogleMobileAds in Frameworks */,
+				AA00000000000000000000E6 /* GoogleUserMessagingPlatform in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +108,10 @@
 				AA00000000000000000000B5 /* TempMailPlus */,
 			);
 			name = TempMailPlus;
+			packageProductDependencies = (
+				AA00000000000000000000E2 /* GoogleMobileAds */,
+				AA00000000000000000000E4 /* GoogleUserMessagingPlatform */,
+			);
 			productName = TempMailPlus;
 			productReference = AA00000000000000000000A5 /* TempMailPlus.app */;
 			productType = "com.apple.product-type.application";
@@ -155,6 +166,10 @@
 			);
 			mainGroup = AA00000000000000000000A2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA00000000000000000000E1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				AA00000000000000000000E3 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA00000000000000000000A3 /* Products */;
 			projectDirPath = "";
@@ -165,6 +180,38 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA00000000000000000000E1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.6.0;
+			};
+		};
+		AA00000000000000000000E3 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA00000000000000000000E2 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA00000000000000000000E1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+		AA00000000000000000000E4 /* GoogleUserMessagingPlatform */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA00000000000000000000E3 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */;
+			productName = GoogleUserMessagingPlatform;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		AA00000000000000000000A8 /* Resources */ = {

@@ -51,7 +51,8 @@ final class CustomEmailViewModelTests: XCTestCase {
             createCustomEmailUseCase: CreateCustomEmailUseCase(repository: repo),
             validateUsernameUseCase: ValidateUsernameUseCase(validator: UsernameValidator(), resourceProvider: EchoResourceProvider()),
             dataStore: dataStore,
-            timeProvider: TimeProvider(timeRepository: FakeTimeRepository())
+            timeProvider: TimeProvider(timeRepository: FakeTimeRepository()),
+            rewardedAdManager: RewardedAdManager()
         )
     }
 

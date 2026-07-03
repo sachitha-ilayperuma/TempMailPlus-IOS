@@ -65,3 +65,6 @@
 "watch_ad" = "Watch ad";
 "or" = "or";
 "unlock_premium_access" = "Unlock Premium Access";
+
+/* Ads / consent (Phase 5) */
+"show_privacy_options" = "Show Privacy Options Form";

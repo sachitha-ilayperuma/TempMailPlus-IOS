@@ -1,11 +1,14 @@
 import SwiftUI
 
 /// Left navigation drawer scaffold, ported from Android
-/// `presentation/screen/main/DrawerContent.kt`. Phase 2 wires the dark-mode toggle
-/// (functional); the remaining rows (FAQ, Help Center, Blog, Rate us, Try our Web,
-/// Support Us, Privacy, Terms) are placeholders completed in Phase 7.
+/// `presentation/screen/main/DrawerContent.kt`. Dark-mode toggle (Phase 2) and the
+/// "Show Privacy Options Form" row (Phase 5, conditional on `isPrivacyOptionsRequired`)
+/// are functional; the remaining rows (FAQ, Help Center, Blog, Rate us, Try our Web,
+/// Support Us, Privacy Policy, Terms) are placeholders completed in Phase 7.
 struct AppDrawer: View {
     @EnvironmentObject private var theme: ThemeManager
+    let isPrivacyOptionsRequired: Bool
+    let onShowPrivacyOptionsForm: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -37,6 +40,24 @@ struct AppDrawer: View {
             .tint(AppColors.themeBlue)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+
+            if isPrivacyOptionsRequired {
+                Divider()
+                Button(action: onShowPrivacyOptionsForm) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "hand.raised.fill")
+                            .frame(width: 24)
+                            .foregroundStyle(AppColors.textSecondary)
+                        Text(String(localized: "show_privacy_options"))
+                            .font(.labelSmall)
+                            .foregroundStyle(AppColors.onBackground)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+            }
 
             Divider()
 

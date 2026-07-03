@@ -8,7 +8,8 @@ xcuserdata/
 
 # SwiftPM
 .swiftpm/
-Package.resolved
+# NOTE: Package.resolved is intentionally NOT ignored — for an app (not a library), it should
+# be committed so everyone/CI builds against the exact same resolved dependency versions.
 
 # macOS
 .DS_Store

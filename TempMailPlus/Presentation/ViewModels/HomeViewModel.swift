@@ -1,11 +1,11 @@
-import Foundation
+import UIKit
 import Combine
+import GoogleMobileAds
 
 /// Ported from Android `presentation/viewModel/HomeViewModel.kt`.
-/// Ads (Phase 5), billing/subscription UI (Phase 6), custom-email creation (Phase 4) and
-/// the WebSocket service (Phase 3) are represented by hooks/stubs marked below; the core
-/// email lifecycle (generate, .com, expiry countdowns, active-email refresh, cold-start
-/// migration) is ported in full.
+/// Billing/subscription UI (Phase 6) is represented by hooks/stubs; the core email
+/// lifecycle (generate, .com, expiry countdowns, active-email refresh, cold-start
+/// migration), WebSocket (Phase 3), and ads/consent (Phase 5) are ported in full.
 struct HomeUiState {
     var tempEmail: TempEmail?
     var emails: [Email] = []
@@ -18,6 +18,11 @@ struct HomeUiState {
     var activeEmailsList: [TempEmail] = []
     var isActiveEmailsLoading = false
     var domains: [String] = []
+
+    // Ads / consent (Phase 5) — mirrors Android's HomeUiState ad fields.
+    var isMobileAdsInitialized = false
+    var canRequestAds = false
+    var isPrivacyOptionsRequired = false
 }
 
 @MainActor
@@ -29,6 +34,9 @@ final class HomeViewModel: ObservableObject {
     private let dataStore: DataStoreManager
     private let timeProvider: TimeProvider
     private let onboardRepository: OnboardRepository
+    private let adsConsentManager: GoogleMobileAdsConsentManager
+    private let rewardedAdManager: RewardedAdManager
+    private let appOpenAdManager: AppOpenAdManager
 
     // Expiry windows (epoch millis), matching Android.
     private let expiredTime = 10 * 60 * 1000
@@ -42,18 +50,24 @@ final class HomeViewModel: ObservableObject {
 
     private var isSubscribed = false
     private var activeEmailsList: [TempEmail] = []
-    private(set) var isInitCalled = false   // used by the scaffold to gate ad/consent init (Phase 5)
+    private(set) var isInitCalled = false   // gates ad/consent init to a single call, like Android
 
     init(
         tempEmailUseCases: TempEmailUseCases,
         dataStore: DataStoreManager,
         timeProvider: TimeProvider,
-        onboardRepository: OnboardRepository
+        onboardRepository: OnboardRepository,
+        adsConsentManager: GoogleMobileAdsConsentManager,
+        rewardedAdManager: RewardedAdManager,
+        appOpenAdManager: AppOpenAdManager
     ) {
         self.tempEmailUseCases = tempEmailUseCases
         self.dataStore = dataStore
         self.timeProvider = timeProvider
         self.onboardRepository = onboardRepository
+        self.adsConsentManager = adsConsentManager
+        self.rewardedAdManager = rewardedAdManager
+        self.appOpenAdManager = appOpenAdManager
 
         observeNewEmailFlag()
         observeSubscriptionStatus()
@@ -61,7 +75,7 @@ final class HomeViewModel: ObservableObject {
         getEmailDomains()
 
         Task { await coldStart() }
-        // Phase 5: rewardedAdManager.loadAd()
+        rewardedAdManager.loadAd()
     }
 
     // MARK: - Cold start / migration
@@ -421,5 +435,67 @@ final class HomeViewModel: ObservableObject {
             }
         }
         loadEmails(email)
+    }
+
+    // MARK: - Ads / consent (Phase 5)
+
+    /// Ported from Android `initAdsAndConsent`: gathers UMP consent, then initializes the
+    /// Mobile Ads SDK once `canRequestAds` is true. Called once from the scaffold (mirrors
+    /// `isInitCalled` gating `LaunchedEffect(Unit)` in `MainScaffold.kt`).
+    func initAdsAndConsent(from viewController: UIViewController) {
+        guard !isInitCalled else { return }
+        isInitCalled = true
+
+        adsConsentManager.gatherConsent(from: viewController) { [weak self] _ in
+            guard let self else { return }
+            self.uiState.canRequestAds = self.adsConsentManager.canRequestAds
+            self.uiState.isPrivacyOptionsRequired = self.adsConsentManager.isPrivacyOptionsRequired
+            if self.uiState.canRequestAds {
+                self.initializeMobileAdsSdkIfNeeded()
+            }
+        }
+        // Consent obtained in a previous session — reflect it immediately (Android does the
+        // same before gatherConsent's callback fires).
+        uiState.canRequestAds = adsConsentManager.canRequestAds
+        uiState.isPrivacyOptionsRequired = adsConsentManager.isPrivacyOptionsRequired
+        if uiState.canRequestAds {
+            initializeMobileAdsSdkIfNeeded()
+        }
+    }
+
+    private var mobileAdsSdkInitStarted = false
+
+    private func initializeMobileAdsSdkIfNeeded() {
+        guard !mobileAdsSdkInitStarted else { return }
+        mobileAdsSdkInitStarted = true
+        MobileAds.shared.start { [weak self] _ in
+            Task { @MainActor in
+                self?.uiState.isMobileAdsInitialized = true
+            }
+        }
+    }
+
+    func showPrivacyOptionsForm(from viewController: UIViewController, completion: @escaping (Error?) -> Void) {
+        adsConsentManager.showPrivacyOptionsForm(from: viewController) { [weak self] error in
+            guard let self else { completion(error); return }
+            self.uiState.canRequestAds = self.adsConsentManager.canRequestAds
+            self.uiState.isPrivacyOptionsRequired = self.adsConsentManager.isPrivacyOptionsRequired
+            completion(error)
+        }
+    }
+
+    func showRewardAd(
+        from viewController: UIViewController,
+        onReward: @escaping () -> Void,
+        noAdAvailableYet: @escaping () -> Void
+    ) {
+        rewardedAdManager.showAd(from: viewController, onUserEarnedReward: onReward, noAdAvailableYet: noAdAvailableYet)
+    }
+
+    /// Ported for parity, but — matching Android, where the equivalent call is commented
+    /// out at every call site in `MainScaffold.kt` — nothing in this port invokes this
+    /// either. Left available for a future pass if app-open ads are turned on.
+    func showAppOpenAd(from viewController: UIViewController?) {
+        appOpenAdManager.showAdIfAvailable(from: viewController)
     }
 }

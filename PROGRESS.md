@@ -12,7 +12,7 @@ Running log of what's been done, per phase. Plan lives in
 | **2** | Home flow | ✅ Done |
 | **3** | Inbox + Email detail + realtime WebSocket | ✅ Done |
 | **4** | Custom email | ✅ Done |
-| **5** | Ads + consent | ⬜ Not started |
+| **5** | Ads + consent | ✅ Done |
 | **6** | Subscriptions (StoreKit 2) | ⬜ Not started |
 | **7** | Menu, FAQ, Rate, localization | ⬜ Not started |
 | **8** | Notifications + polish | ⬜ Not started |
@@ -285,8 +285,98 @@ declined again this session. Home was re-confirmed working end-to-end after the 
 Added to the deferred visual-check list (now: Inbox, Email detail, **Add Custom Email sheet**,
 domain picker menu, inline error toast, watch-ad sheet).
 
-## Phase 5 — Ads + consent ⏳
+## Phase 5 — Ads + consent ✅ (2026-07-03)
 
-_Next._ UMP consent gathering + privacy-options form, Banner (home)/Rewarded (gates
-refresh+.com+custom-email for free users)/App-Open ads, ironSource mediation. Will replace the
-ad-gating stubs left in place across Phases 2–4.
+**Deliverable met:** real Google Mobile Ads + UMP SDKs integrated via SPM, zero warnings
+(Debug + Release), 38/38 tests pass, and **verified live on the simulator** — a clean install
+shows Google's actual UMP consent dialog ("Our app wants to stay free for you…"), proving the
+full pipeline (consent request → Google's servers → real form presentation) genuinely works, not
+just compiles.
+
+### Scope decision
+Presented the user a 3-way choice on how deep to go, since ironSource's iOS SDK has no SPM
+support (CocoaPods/manual only) and would restructure the whole project (Podfile, `.xcworkspace`).
+User chose: **real AdMob + UMP via SPM now, defer ironSource** (no project restructure needed).
+
+Done:
+- **Dependencies:** added `swift-package-manager-google-mobile-ads` (13.6.0) and
+  `swift-package-manager-google-user-messaging-platform` (3.1.0) as `XCRemoteSwiftPackageReference`s
+  in the hand-written `.pbxproj`, linked only to the app target (not the test target — hosted tests
+  run inside the already-linked app process, no separate link needed). `Info.plist` gained
+  `GADApplicationIdentifier` (Google's iOS test app ID — flagged for replacement before release)
+  and `NSUserTrackingUsageDescription`. `SKAdNetworkItems` deliberately **not** added — it's a long
+  Google-maintained list that's an App Store/attribution requirement, not a build/simulator
+  requirement; flagged as a Phase 8 pre-release checklist item rather than risk transcribing it
+  wrong from a search snippet.
+- **`GoogleMobileAdsConsentManager`**: wraps UMP's `ConsentInformation`/`ConsentForm`/
+  `RequestParameters`/`DebugSettings` (careful: these are the *renamed*, non-`UMP`-prefixed Swift
+  API names as of UMP 3.x — confirmed by the compiler's own deprecation-rename diagnostics, not
+  guessed). `gatherConsent`, `showPrivacyOptionsForm`, `canRequestAds`, `isPrivacyOptionsRequired`.
+- **`RewardedAdManager`** + **`AppOpenAdManager`**: ported using GoogleMobileAds 13.x's Swift-idiomatic
+  names (`RewardedAd`, `AppOpenAd`, `Request`, `FullScreenContentDelegate`, `FullScreenPresentingAd`
+  — dropped the old `GAD`-prefixed names, confirmed against the actual pinned SDK version, not
+  assumed). `AppOpenAdManager` is ported for parity but **intentionally not wired to any trigger** —
+  matching Android, where `showAppOpenAd(activity)` is commented out at every call site in
+  `MainScaffold.kt`. This is a discovered fact about the source app, not an omission in the port.
+- **`BannerAdView`** (`UIViewRepresentable` wrapping `BannerView`) — shown on Home for
+  `canRequestAds && !isSubscribed`, matching Android.
+- **`UIKitBridge.rootViewController`**: small helper resolving the presenting `UIViewController`
+  from the active scene's key window — the iOS analog of the `Activity` reference Android's ad APIs
+  take (SwiftUI has no first-class handle to "current view controller").
+- **`HomeViewModel`**: `initAdsAndConsent`, `showPrivacyOptionsForm`, `showRewardAd`, `showAppOpenAd`
+  (ported/dormant per above), `isInitCalled` gating (mirrors Android's `LaunchedEffect(Unit)` guard),
+  new `HomeUiState` fields (`canRequestAds`, `isMobileAdsInitialized`, `isPrivacyOptionsRequired`).
+- **Real ad-gating wired into `HomeView`**, replacing the Phase 2/3 direct-regenerate stubs:
+  Refresh/Delete/.com confirm actions and the expired-state refresh now show `WatchAdBottomSheet`
+  for free users and call the real rewarded ad. **Ported exactly** (not "cleaned up") a real Android
+  quirk: `showRewardedAd`'s `onReward` **and** `noAdAvailableYet` callbacks both generate the email —
+  Android's own fail-open design, where gating happens via the sheet tap, not the ad completion
+  signal.
+- **`CustomEmailViewModel.showRewardAd`** now calls the real `RewardedAdManager` (was a Phase 4 stub).
+- **`AppDrawer`**: added a conditional "Show Privacy Options Form" row (shown only when
+  `isPrivacyOptionsRequired`), wired to the real consent manager.
+- **`AppContainer`**: constructs and wires `GoogleMobileAdsConsentManager`, `RewardedAdManager`,
+  `AppOpenAdManager`.
+
+### Discovered Android quirk — Inbox ad-gating is inconsistent with Home (ported faithfully)
+Verified against the Android source directly: Inbox's expired-state refresh (`ConnectionLost`)
+**always** shows the watch-ad sheet regardless of `isSubscribed`, and tapping "watch ad" **always**
+calls `generateNewEmail(false)` directly — `onAdCountdownFinished` never touches the real ad SDK at
+all, unlike Home's equivalent flow which does. This is a genuine inconsistency in the Android app
+(subscribed users hit an unnecessary ad-sheet tap in Inbox but not in Home; the Inbox "ad" is
+cosmetic). Ported exactly as observed, documented in `InboxView.swift` and here rather than
+"fixed" — changing it would be a silent behavior deviation from the source app.
+
+Verified:
+- `xcodebuild -resolvePackageDependencies` → both packages resolved cleanly over network.
+- Debug (app + tests) and Release builds → **zero warnings, zero errors**.
+- `xcodebuild … test` → **38/38 pass**.
+- Clean-install launch → **Google's real UMP consent dialog renders**, proving the consent request
+  actually reached Google's servers and the form actually presented from the resolved root view
+  controller. No crash from any of the new ad/consent/banner code paths.
+- Two real compiler-caught bugs fixed before commit: a redundant/always-true `responseInfo != nil`
+  check in `AppOpenAdManager` (not present in Android's `isAdAvailable()` either — removed to match
+  exactly) and an unused `self` capture in the consent manager's closure.
+
+Deferred (documented, not silently dropped):
+- **ironSource mediation** — needs CocoaPods (no SPM support), by user decision this phase.
+- **Real iOS AdMob app ID + ad unit IDs** — still Google's public test IDs; must be replaced with
+  real production IDs from AdMob console before release (flagged since Phase 0).
+- **`SKAdNetworkItems`** — Phase 8 pre-release checklist (App Store/attribution requirement, not a
+  build requirement).
+- **Firebase analytics event logging on consent status** (Android logs `ad_consent_status` /
+  `ad_consent_error`) — Phase 7, alongside the rest of analytics.
+- App-open ad triggering — ported but dormant, matching Android's own commented-out usage.
+
+**Visual-check backlog note:** unlike Phases 3/4, this phase got a genuine (if partial) visual
+verification "for free" — the UMP consent dialog auto-presents on launch, so a static screenshot
+proved the SDK pipeline works without needing any simulator taps. The rewarded-ad flow itself
+(tapping "Watch ad" and seeing a real video ad) still requires taps and joins the existing deferred
+visual-check list.
+
+## Phase 6 — Subscriptions (StoreKit 2) ⏳
+
+_Next._ `BillingRepository` on StoreKit 2 (load products, purchase, restore, transaction listener,
+persist `is_subscribed`), Subscription screen 1:1 (feature list, plan cards, price/trial from
+store), gating premium features. Will replace the Premium placeholder sheet in `MainScaffold` and
+the subscription-dialog hooks left across Phases 2–5.

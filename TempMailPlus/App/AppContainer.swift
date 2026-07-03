@@ -36,6 +36,11 @@ final class AppContainer: ObservableObject {
     let validateUsernameUseCase: ValidateUsernameUseCase
     let validateDailyEmailLimitUseCase: ValidateDailyEmailLimitUseCase
 
+    // Ads / consent (Phase 5)
+    let adsConsentManager: GoogleMobileAdsConsentManager
+    let rewardedAdManager: RewardedAdManager
+    let appOpenAdManager: AppOpenAdManager
+
     // View models (shared across screens, like the Android activity-scoped HomeViewModel)
     let homeViewModel: HomeViewModel
 
@@ -88,11 +93,20 @@ final class AppContainer: ObservableObject {
             repository: emailLimitRepository
         )
 
+        let adsConsentManager = GoogleMobileAdsConsentManager()
+        self.adsConsentManager = adsConsentManager
+        let rewardedAdManager = RewardedAdManager()
+        self.rewardedAdManager = rewardedAdManager
+        self.appOpenAdManager = AppOpenAdManager()
+
         self.homeViewModel = HomeViewModel(
             tempEmailUseCases: tempEmailUseCases,
             dataStore: dataStore,
             timeProvider: timeProvider,
-            onboardRepository: onboardRepository
+            onboardRepository: onboardRepository,
+            adsConsentManager: adsConsentManager,
+            rewardedAdManager: rewardedAdManager,
+            appOpenAdManager: appOpenAdManager
         )
     }
 
@@ -109,7 +123,8 @@ final class AppContainer: ObservableObject {
             createCustomEmailUseCase: CreateCustomEmailUseCase(repository: tempEmailRepository),
             validateUsernameUseCase: validateUsernameUseCase,
             dataStore: dataStore,
-            timeProvider: timeProvider
+            timeProvider: timeProvider,
+            rewardedAdManager: rewardedAdManager
         )
     }
 }

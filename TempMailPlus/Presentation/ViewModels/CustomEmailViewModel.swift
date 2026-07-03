@@ -1,11 +1,7 @@
-import Foundation
+import UIKit
 
 /// Ported from Android `presentation/viewModel/CustomEmailViewModel.kt`.
-///
-/// Ad-gating for free users is UI-complete (mirrors Android's WatchAdBottomSheet flow)
-/// but the "watch ad" action creates the email directly rather than showing a real
-/// rewarded ad — the AdMob/ironSource SDK integration is Phase 5. This matches how
-/// Phase 2/3 already stub ad gating on Home/Inbox.
+/// Ad-gating for free users uses the real `RewardedAdManager` (Phase 5).
 struct CustomEmailUiState {
     var isProcessing = false
     var errorMessage: String?
@@ -26,17 +22,20 @@ final class CustomEmailViewModel: ObservableObject {
     private let validateUsernameUseCase: ValidateUsernameUseCase
     private let dataStore: DataStoreManager
     private let timeProvider: TimeProvider
+    private let rewardedAdManager: RewardedAdManager
 
     init(
         createCustomEmailUseCase: CreateCustomEmailUseCase,
         validateUsernameUseCase: ValidateUsernameUseCase,
         dataStore: DataStoreManager,
-        timeProvider: TimeProvider
+        timeProvider: TimeProvider,
+        rewardedAdManager: RewardedAdManager
     ) {
         self.createCustomEmailUseCase = createCustomEmailUseCase
         self.validateUsernameUseCase = validateUsernameUseCase
         self.dataStore = dataStore
         self.timeProvider = timeProvider
+        self.rewardedAdManager = rewardedAdManager
     }
 
     func createCustomEmail(prefix: String, domain: String) {
@@ -92,12 +91,25 @@ final class CustomEmailViewModel: ObservableObject {
         uiState.canCreateForLockedUser = freeExpired && !hasCustomEmail
     }
 
-    /// Stubbed rewarded-ad flow (Phase 5 will wire a real ad SDK here). Creates the email
-    /// immediately, matching how ad-gated actions are stubbed elsewhere in this port.
-    func showRewardAd(prefix: String, domain: String) {
-        createCustomEmail(prefix: prefix, domain: domain)
-        updateFreeEmailExpiredTimestamp()
-        resetRewardedAdPopup()
+    /// Ported from Android `showRewardAd(activity, canRequestAds, prefix, domain)`: shows the
+    /// real rewarded ad; on reward, creates the email and stamps the 25h free-usage window.
+    /// Falls back to the subscription dialog if ads can't be requested.
+    func showRewardAd(from viewController: UIViewController?, canRequestAds: Bool, prefix: String, domain: String) {
+        guard let viewController, canRequestAds else {
+            showSubscription()
+            return
+        }
+        rewardedAdManager.showAd(
+            from: viewController,
+            onUserEarnedReward: { [weak self] in
+                self?.createCustomEmail(prefix: prefix, domain: domain)
+                self?.updateFreeEmailExpiredTimestamp()
+                self?.resetRewardedAdPopup()
+            },
+            noAdAvailableYet: { [weak self] in
+                self?.showSubscription()
+            }
+        )
     }
 
     func updateFreeEmailExpiredTimestamp() {

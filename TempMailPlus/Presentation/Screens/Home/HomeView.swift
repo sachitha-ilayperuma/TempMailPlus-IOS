@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// Ported from Android `presentation/screen/home/HomeScreen.kt` (HomeScreenContent).
-/// Ad gating (Phase 5), custom-email sheet (Phase 4), subscription sheet (Phase 6) are
-/// represented by hooks; in Phase 2 the confirm actions regenerate directly (the no-ad
-/// path). Branded logo/icons use SF Symbols as stand-ins for the Android drawables.
+/// Ported from Android `presentation/screen/home/HomeScreen.kt` (HomeScreenContent), now
+/// including real ad-gating (Phase 5). Subscription sheet is still a Phase 6 hook. Branded
+/// logo/icons use SF Symbols as stand-ins for the Android drawables.
 struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
-    var onOpenCustomEmail: () -> Void = {}          // Phase 4
+    var onOpenCustomEmail: () -> Void = {}
     var onOpenSubscription: () -> Void = {}          // Phase 6
 
     @State private var confirmationAction: ConfirmationAction?
     @State private var copied = false
+    @State private var showStandardAdSheet = false
+    @State private var showComMailAdSheet = false
 
     private var s: HomeUiState { viewModel.uiState }
     private var isCustomEmail: Bool { s.tempEmail?.isCustomEmail ?? false }
@@ -65,6 +66,12 @@ struct HomeView: View {
                     .padding(.horizontal, 24)
                     .frame(maxWidth: .infinity)
                 }
+
+                if s.canRequestAds && !s.isSubscribed {
+                    BannerAdView()
+                        .frame(height: 50)
+                        .frame(maxWidth: .infinity)
+                }
             }
 
             if s.isLoading {
@@ -80,6 +87,27 @@ struct HomeView: View {
                 onSuccess: {
                     handleConfirm(action)
                     confirmationAction = nil
+                }
+            )
+        }
+        .sheet(isPresented: Binding(
+            get: { showStandardAdSheet || showComMailAdSheet },
+            set: { if !$0 { showStandardAdSheet = false; showComMailAdSheet = false } }
+        )) {
+            WatchAdBottomSheet(
+                title: String(localized: "watch_ad_title"),
+                description: String(localized: "watch_ad_desc"),
+                onWatchAd: {
+                    // Capture which flow this is before resetting, matching Android.
+                    let isComMail = showComMailAdSheet
+                    showStandardAdSheet = false
+                    showComMailAdSheet = false
+                    showRewardedAd(isComEmail: isComMail)
+                },
+                onSubscriptionClicked: {
+                    showStandardAdSheet = false
+                    showComMailAdSheet = false
+                    onOpenSubscription()
                 }
             )
         }
@@ -186,7 +214,10 @@ struct HomeView: View {
     }
 
     private var expiredRefreshButton: some View {
-        Button { viewModel.generateNewEmail(loadComEmail: false) } label: {
+        Button {
+            if s.isSubscribed { viewModel.generateNewEmail(loadComEmail: false) }
+            else { showStandardAdSheet = true }
+        } label: {
             Text(String(localized: "refresh"))
                 .font(.titleMedium)
                 .foregroundStyle(AppColors.themeBlue)
@@ -216,14 +247,32 @@ struct HomeView: View {
         return isCustomEmail ? AppColors.onBackground : AppColors.textSecondary
     }
 
-    // MARK: - Actions (ad gating inserted in Phase 5)
+    // MARK: - Actions (Phase 5: real ad gating)
 
     private func handleConfirm(_ action: ConfirmationAction) {
         switch action {
         case .deleteEmail, .resetMailbox:
-            viewModel.generateNewEmail(loadComEmail: false)
+            if s.isSubscribed { viewModel.generateNewEmail(loadComEmail: false) }
+            else { showStandardAdSheet = true }
         case .loadComMail:
-            viewModel.generateNewEmail(loadComEmail: true)
+            if s.isSubscribed { viewModel.generateNewEmail(loadComEmail: true) }
+            else { showComMailAdSheet = true }
         }
+    }
+
+    /// Ported exactly from Android's `showRewardedAd` closure: **both** the reward-earned
+    /// and no-ad-available-yet callbacks generate the email (Android's own fail-open
+    /// design — gating happens by requiring the sheet tap, not by the ad completion
+    /// signal). Not "fixed" here; ported faithfully.
+    private func showRewardedAd(isComEmail: Bool) {
+        guard s.canRequestAds, let vc = UIKitBridge.rootViewController else {
+            viewModel.generateNewEmail(loadComEmail: false)
+            return
+        }
+        viewModel.showRewardAd(
+            from: vc,
+            onReward: { viewModel.generateNewEmail(loadComEmail: isComEmail) },
+            noAdAvailableYet: { viewModel.generateNewEmail(loadComEmail: isComEmail) }
+        )
     }
 }

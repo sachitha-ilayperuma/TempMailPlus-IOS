@@ -12,4 +12,10 @@ enum Constants {
     static let admobAppOpenID = "ca-app-pub-3940256099942544/5575463023"
 
     static let adTag = "AD_TAG"
+
+    /// Android's `TEST_DEVICE_HASHED_ID` is an Android-specific device-hash format and is
+    /// not valid on iOS. The UMP/Google Mobile Ads SDKs print the correct per-simulator/
+    /// device test identifier to the Xcode console on first run — replace this placeholder
+    /// with that value for reliable consent/ad debug-geography testing.
+    static let testDeviceHashedID = "0C8834BE201EEB6EA00DF7D14376331A"
 }

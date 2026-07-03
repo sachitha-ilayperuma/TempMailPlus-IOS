@@ -6,6 +6,7 @@ struct AddCustomEmailSheet: View {
     let domainsList: [String]
     let isSubscribed: Bool
     let activeEmailsList: [TempEmail]
+    let canRequestAds: Bool
     let onDismiss: () -> Void
     let onAddCustomEmail: (String, String, Int) -> Void
     let onShowSubscriptionView: () -> Void
@@ -19,6 +20,7 @@ struct AddCustomEmailSheet: View {
         domainsList: [String],
         isSubscribed: Bool,
         activeEmailsList: [TempEmail],
+        canRequestAds: Bool,
         viewModel: @autoclosure @escaping () -> CustomEmailViewModel,
         onDismiss: @escaping () -> Void,
         onAddCustomEmail: @escaping (String, String, Int) -> Void,
@@ -27,6 +29,7 @@ struct AddCustomEmailSheet: View {
         self.domainsList = domainsList
         self.isSubscribed = isSubscribed
         self.activeEmailsList = activeEmailsList
+        self.canRequestAds = canRequestAds
         self._viewModel = StateObject(wrappedValue: viewModel())
         self.onDismiss = onDismiss
         self.onAddCustomEmail = onAddCustomEmail
@@ -163,7 +166,14 @@ struct AddCustomEmailSheet: View {
             WatchAdBottomSheet(
                 title: String(localized: "watch_ad_title"),
                 description: String(localized: "watch_ad_desc"),
-                onWatchAd: { viewModel.showRewardAd(prefix: username, domain: selectedDomain) },
+                onWatchAd: {
+                    viewModel.showRewardAd(
+                        from: UIKitBridge.rootViewController,
+                        canRequestAds: canRequestAds,
+                        prefix: username,
+                        domain: selectedDomain
+                    )
+                },
                 onSubscriptionClicked: {
                     viewModel.resetRewardedAdPopup()
                     onShowSubscriptionView()
