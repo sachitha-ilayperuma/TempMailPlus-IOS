@@ -228,8 +228,14 @@ in this session** — computer-use access (needed to tap simulator tabs) was req
 Home was re-confirmed working end-to-end after the Phase 3 wiring landed, which exercises the same
 `AppContainer`/`HomeViewModel` machinery the Inbox screen depends on, but the Inbox-specific SwiftUI
 layout (dropdown overlay positioning, list rendering, sheet presentation) has only been verified by
-build success + code review, not by looking at it. Flag for manual check in Xcode, or grant
-computer-use in a future session to close this out.
+build success + code review, not by looking at it.
+
+**User decision (2026-07-02):** visual check deferred to after Phase 4 — user will verify Inbox +
+Email detail together with the Phase 4 custom-email flow in one pass. Checklist handed off:
+dropdown header (single vs multi-email chevron), dropdown overlay sectioning/highlight/dismiss,
+empty/loaded/expired inbox states + pull-to-refresh, detail screen back button/sender
+card/**HTML body rendering (highest risk — new WKWebView code)**, attachments card expand +
+open-in-Safari, and live-arrival badge on the Inbox tab icon.
 
 Deferred to their phases (hooks in place):
 - Ad gating on the expired-state refresh (Phase 5).
