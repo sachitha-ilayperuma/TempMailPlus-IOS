@@ -38,6 +38,7 @@ final class HomeViewModel: ObservableObject {
     private let rewardedAdManager: RewardedAdManager
     private let appOpenAdManager: AppOpenAdManager
     private let analyticsTracker: AnalyticsTracker
+    private let notificationManager: LocalNotificationManager
 
     // Expiry windows (epoch millis), matching Android.
     private let expiredTime = 10 * 60 * 1000
@@ -61,7 +62,8 @@ final class HomeViewModel: ObservableObject {
         adsConsentManager: GoogleMobileAdsConsentManager,
         rewardedAdManager: RewardedAdManager,
         appOpenAdManager: AppOpenAdManager,
-        analyticsTracker: AnalyticsTracker
+        analyticsTracker: AnalyticsTracker,
+        notificationManager: LocalNotificationManager
     ) {
         self.tempEmailUseCases = tempEmailUseCases
         self.dataStore = dataStore
@@ -71,6 +73,7 @@ final class HomeViewModel: ObservableObject {
         self.rewardedAdManager = rewardedAdManager
         self.appOpenAdManager = appOpenAdManager
         self.analyticsTracker = analyticsTracker
+        self.notificationManager = notificationManager
 
         observeNewEmailFlag()
         observeSubscriptionStatus()
@@ -427,6 +430,21 @@ final class HomeViewModel: ObservableObject {
         analyticsTracker.logEvent(event)
     }
 
+    // MARK: - Notifications (Phase 8)
+
+    func isNotificationPermissionDeclined() -> Bool { dataStore.isNotificationPermissionDeclined() }
+    func setNotificationPermissionDeclined(_ declined: Bool) { dataStore.setNotificationPermissionDeclined(declined) }
+
+    /// Matches Android's `HomeScreen.kt` permission-request `LaunchedEffect`: only prompts
+    /// if the user hasn't already declined.
+    func requestNotificationPermissionIfNeeded() {
+        guard !isNotificationPermissionDeclined() else { return }
+        Task {
+            let granted = await notificationManager.requestAuthorization()
+            if !granted { setNotificationPermissionDeclined(true) }
+        }
+    }
+
     func getEmailDomains() {
         Task {
             if let domains = try? await tempEmailUseCases.getEmailDomainsUseCase() {
@@ -441,8 +459,11 @@ final class HomeViewModel: ObservableObject {
 
     /// Connects the WebSocket to `email` and (once) starts observing incoming mail.
     /// On a new message we set the new-email flag, which `observeNewEmailFlag` turns into
-    /// a live inbox reload — matching Android's service → `setHasNewEmail(true)` → reload.
-    /// (Local notifications for backgrounded delivery are Phase 8; see plan §7.)
+    /// a live inbox reload — matching Android's service → `setHasNewEmail(true)` → reload —
+    /// and post a local notification, matching Android's `WebSocketService.showNotification`.
+    /// This only fires while foreground/active, since the socket doesn't run in the
+    /// background on iOS (no backend push available — see IMPLEMENTATION_PLAN.md §7).
+    /// `BackgroundRefreshManager` is the best-effort supplement for the backgrounded case.
     func startWebSocketService(email: String) {
         tempEmailUseCases.connectWebSocketUseCase(email: email)
 
@@ -450,8 +471,13 @@ final class HomeViewModel: ObservableObject {
             socketObserveStarted = true
             Task { [weak self] in
                 guard let self else { return }
-                for await _ in self.tempEmailUseCases.observeEmailsUseCase() {
+                for await newEmail in self.tempEmailUseCases.observeEmailsUseCase() {
                     self.dataStore.setHasNewEmail(true)
+                    self.notificationManager.postNewMailNotification(
+                        fromName: newEmail.fromName,
+                        subject: newEmail.subject,
+                        identifier: newEmail.id
+                    )
                 }
             }
         }

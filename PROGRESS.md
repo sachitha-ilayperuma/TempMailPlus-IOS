@@ -15,7 +15,7 @@ Running log of what's been done, per phase. Plan lives in
 | **5** | Ads + consent | ✅ Done |
 | **6** | Subscriptions (StoreKit 2) | ✅ Done |
 | **7** | Menu, FAQ, Rate, localization | ✅ Done |
-| **8** | Notifications + polish | ⬜ Not started |
+| **8** | Notifications + polish | ✅ Done |
 
 Legend: ✅ done · 🚧 in progress · ⏳ next · ⬜ not started
 
@@ -564,11 +564,97 @@ Deferred (documented, not silently dropped):
   auto-rendered states) — joins the existing deferred visual-check backlog (Inbox, Email detail,
   Custom Email sheet, StoreKit purchase flow).
 
-## Phase 8 — Notifications + polish ⏳
+## Phase 8 — Notifications + polish ✅ (2026-07-10)
 
-_Next, and final phase._ Per IMPLEMENTATION_PLAN.md §7 (no-backend-changes constraint): local
-notifications for foreground-received mail, best-effort `BGAppRefreshTask` background polling,
-documented background-notification limitation. Plus release polish: real AppIcon, real branded
-icons/Lottie crown swap-in, `SKAdNetworkItems`, `ITSAppUsesNonExemptEncryption`, accessibility pass,
-iPad layout check, and the accumulated manual verification backlog (Inbox/detail/custom-email/
-StoreKit/FAQ/onboarding interactive testing).
+**Deliverable met — final phase, all 8 phases now complete.** Builds clean (Debug + Release, zero
+warnings), **48/48 tests pass**, and real launches confirm the **actual OS notification permission
+dialog fires** (not a stub), the **real app icon renders on the springboard**, the app **runs
+functionally on iPad**, and the **real Lottie crown animation is correctly bundled** and wired.
+
+Done:
+- **`LocalNotificationManager`**: wraps `UNUserNotificationCenter` — `requestAuthorization()`
+  (ported from Android's `POST_NOTIFICATIONS` request, gated the same way: only prompts if not
+  already declined) and `postNewMailNotification` (ported from
+  `WebSocketService.showNotification` — sender name as title, subject as body). Wired into
+  `HomeViewModel.startWebSocketService`'s existing WebSocket observer, so foreground-received mail
+  now posts a real local notification, not just the in-app badge.
+- **`BackgroundRefreshManager`** (`BGAppRefreshTask`, no Android equivalent — iOS's own answer to
+  the no-backend-push constraint): registers a background task on `AppContainer` init, reschedules
+  on every backgrounding (`MainScaffold`'s existing `scenePhase` observer), and on each opportunistic
+  run fetches the selected mailbox, diffs against a persisted "seen ids" set
+  (`DataStoreManager.getSeenEmailIds`/`setSeenEmailIds` — new, iOS-only, no Android source key —
+  needed since a background launch has no live in-memory cache to diff against), and posts
+  notifications for genuinely new mail (capped at 3 to avoid notification-spam on a big batch).
+  `Info.plist`: `BGTaskSchedulerPermittedIdentifiers` + `UIBackgroundModes: fetch`.
+- **Release polish:**
+  - **Real AppIcon**: converted Android's 512×512 Play Store icon (best available source) to a
+    1024×1024, alpha-free PNG (via a JPEG round-trip — `sips` has no direct "strip alpha" flag;
+    JPEG's format definition has no alpha channel, so converting through it is a reliable way to
+    flatten). Verified genuinely compiled into the asset catalog at the derived sizes Xcode needs
+    (60×60@2x iPhone, 76×76@2x iPad) and confirmed rendering on the actual simulator springboard.
+  - **Real Lottie crown animation**: added `lottie-ios` (4.6.1) via SPM — a clean add like Phase
+    5/6's other SPM dependencies, no CocoaPods needed. `SubscriptionSheet` now uses
+    `LottieView(animation: .named("twincle_crown"))` instead of the SF Symbol stand-in; verified
+    the JSON is genuinely present in the built app bundle (not silently missing).
+  - **`SKAdNetworkItems`**: pulled the real, complete 50-identifier list directly from Google's own
+    sample `Info.plist` (`googleads-mobile-flutter` repo) via `curl` + `plistlib`, rather than
+    hand-transcribing a list that size (Phase 5 deliberately deferred this exact risk — now closed
+    out properly with a verified source).
+  - **`ITSAppUsesNonExemptEncryption`**: set `false` — the app's only encryption use is AES to
+    obscure a bundled config string (Phase 1) and standard HTTPS/TLS, both exempt categories.
+  - **Accessibility**: focused (not exhaustive) pass — `.accessibilityLabel` added to the icon-only
+    buttons that had no visible text (hamburger menu, FAQ/Email-detail back buttons, Home's copy
+    button); the Inbox dropdown's chevron was left alone since its parent button already has a
+    visible `Text(selectedEmail)` that VoiceOver reads automatically. Dynamic Type was already
+    wired since Phase 0.
+  - **iPad**: confirmed functional (builds clean, installs, generates a real email from the live
+    backend, no crash) but **not visually optimized** — layout is the same phone-width design,
+    not a dedicated iPad layout. Documented honestly rather than overclaiming "iPad support."
+
+Verified:
+- `xcodebuild … build` (Debug + Release, iPhone **and** iPad destinations) → zero warnings, zero
+  errors.
+- `xcodebuild … test` → **48/48 pass**.
+- Real launch → **the actual native "TempMailPlus Would Like to Send You Notifications" dialog
+  fires**, stacked on the Phase 5 UMP dialog — proves `requestAuthorization()` genuinely calls the
+  OS, not a stub, and nothing crashed from the new BGTaskScheduler registration/notification
+  code/Lottie dependency.
+- Real launch on iPad Air (M4) simulator → generates a real email from the live backend, no crash.
+- Springboard screenshot → the real converted app icon renders correctly with the "TempMailPlus"
+  label.
+- `Info.plist` validated with `plutil -lint` after the large `SKAdNetworkItems` addition.
+
+Deferred (documented, not silently dropped — see IMPLEMENTATION_PLAN.md §8 for the consolidated
+final list):
+- Real AdMob production ad unit IDs, real App Store Connect subscription product IDs, real Firebase
+  credentials — all need external account setup outside this session's scope.
+- ironSource mediation — descoped by user decision in Phase 5 (CocoaPods-only, no SPM).
+- Dedicated iPad layout (currently functional-but-unoptimized phone-width UI on the larger screen).
+- Exhaustive accessibility audit (this was a focused pass on icon-only buttons, not a full
+  VoiceOver/Dynamic-Type/contrast audit).
+- Real branded drawer/social-row icons (SF Symbol stand-ins remain).
+
+### Consolidated manual verification checklist (accumulated since Phase 3)
+Everything below compiles, passes its automated tests where applicable, and has been verified via
+real launches wherever a screenshot could prove it without tapping. What remains is **interactive
+tap-through verification**, which needs either the user's own device/simulator testing or a future
+session with computer-use access granted:
+- **Inbox** (Phase 3): dropdown header/overlay with 2+ active emails, switching mailboxes, swipe/tap
+  interactions, pull-to-refresh gesture.
+- **Email detail** (Phase 3): tapping into a real received email, HTML rendering fidelity, opening
+  an attachment.
+- **Custom Email** (Phase 4): the full create-custom-email flow end-to-end, including the
+  free-tier/rewarded-ad branch.
+- **Ads** (Phase 5): actually watching a rewarded ad through to completion (banner/consent dialog
+  are confirmed rendering for real; the rewarded video flow itself is untapped).
+- **StoreKit purchase** (Phase 6): completing a purchase via the `TempMailPlus.storekit` local
+  config in Xcode's own Run/Test (not `xcodebuild` — confirmed as a real Apple tooling limitation,
+  not fixable from this session).
+- **FAQ / drawer / rate sheet / onboarding** (Phase 7): tapping through FAQ items, every drawer row,
+  the onboarding Next/Previous/Skip controls, the rate sheet's Later/Rate Now buttons.
+- **Notifications** (Phase 8): granting the permission dialog and confirming a real notification
+  banner appears (the dialog itself is confirmed firing; tapping "Allow" and receiving a real
+  notification is untapped).
+
+This is the natural next step once you're ready to do a hands-on pass, or a good scope for a future
+session with computer-use enabled.

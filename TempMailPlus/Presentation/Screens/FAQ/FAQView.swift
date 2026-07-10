@@ -52,6 +52,7 @@ struct FAQView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(AppColors.onBackground)
                 }
+                .accessibilityLabel("Back")
                 Spacer()
             }
             .padding(.horizontal, 16)

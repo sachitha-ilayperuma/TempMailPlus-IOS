@@ -57,6 +57,7 @@ struct EmailDetailView: View {
                     .padding(8)
                     .background(AppColors.surfaceDim(colorScheme), in: Circle())
             }
+            .accessibilityLabel("Back")
             Spacer()
         }
         .padding(.horizontal, 12)

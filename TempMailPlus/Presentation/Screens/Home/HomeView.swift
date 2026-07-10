@@ -111,6 +111,11 @@ struct HomeView: View {
                 }
             )
         }
+        // Ported from Android's HomeScreen.kt LaunchedEffect(Unit): request notification
+        // permission on first appearance, unless the user already declined.
+        .onAppear {
+            viewModel.requestNotificationPermissionIfNeeded()
+        }
     }
 
     // MARK: - Pieces
@@ -158,6 +163,7 @@ struct HomeView: View {
                             .background(AppColors.themeBlue, in: Circle())
                     }
                     .padding(4)
+                    .accessibilityLabel(String(localized: "copy_email"))
                 }
             }
             .frame(height: 50)

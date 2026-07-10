@@ -131,6 +131,10 @@ final class DataStoreManager {
     func setServiceTimedOut(_ value: Bool) { defaults.set(value, forKey: PreferenceKeys.isServiceTimedOut) }
     func isServiceTimedOut() -> Bool { defaults.bool(forKey: PreferenceKeys.isServiceTimedOut) }
 
+    // MARK: - Seen email ids (Phase 8, BackgroundRefreshManager bookkeeping)
+    func getSeenEmailIds() -> [String] { defaults.stringArray(forKey: PreferenceKeys.seenEmailIds) ?? [] }
+    func setSeenEmailIds(_ ids: [String]) { defaults.set(ids, forKey: PreferenceKeys.seenEmailIds) }
+
     // MARK: - Helpers
     private func readTempEmail(_ key: String) -> TempEmail {
         guard let data = defaults.data(forKey: key),

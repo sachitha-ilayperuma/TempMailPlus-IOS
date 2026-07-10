@@ -138,6 +138,10 @@ struct MainScaffold: View {
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
                 viewModel.checkAndHandleEmailExpiration()
+            } else if newPhase == .background {
+                // Best-effort background poll (Phase 8, no Android equivalent — see
+                // BackgroundRefreshManager's doc comment / IMPLEMENTATION_PLAN.md §7).
+                container.backgroundRefreshManager.scheduleNextRefresh()
             }
         }
         // Reactively (re)connect the WebSocket when the selected email changes — ports
@@ -175,6 +179,7 @@ struct MainScaffold: View {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(AppColors.onBackground)
                 }
+                .accessibilityLabel("Menu")
                 Spacer()
             }
             .padding(.horizontal, 16)

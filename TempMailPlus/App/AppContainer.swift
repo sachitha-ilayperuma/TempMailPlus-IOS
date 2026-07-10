@@ -47,6 +47,10 @@ final class AppContainer: ObservableObject {
     // Analytics (Phase 7)
     let analyticsTracker: AnalyticsTracker
 
+    // Notifications (Phase 8)
+    let notificationManager: LocalNotificationManager
+    let backgroundRefreshManager: BackgroundRefreshManager
+
     // View models (shared across screens, like the Android activity-scoped HomeViewModel)
     let homeViewModel: HomeViewModel
 
@@ -112,6 +116,18 @@ final class AppContainer: ObservableObject {
             dataSource: StoreKitBillingDataSource(dataStore: dataStore, analyticsTracker: analyticsTracker)
         )
 
+        let notificationManager = LocalNotificationManager()
+        self.notificationManager = notificationManager
+        let backgroundRefreshManager = BackgroundRefreshManager(
+            dataStore: dataStore,
+            tempEmailUseCases: tempEmailUseCases,
+            notificationManager: notificationManager
+        )
+        self.backgroundRefreshManager = backgroundRefreshManager
+        // Must register before the app finishes launching — AppContainer is constructed
+        // via @StateObject in TempMailPlusApp, early enough in the SwiftUI app lifecycle.
+        backgroundRefreshManager.registerTask()
+
         self.homeViewModel = HomeViewModel(
             tempEmailUseCases: tempEmailUseCases,
             dataStore: dataStore,
@@ -120,7 +136,8 @@ final class AppContainer: ObservableObject {
             adsConsentManager: adsConsentManager,
             rewardedAdManager: rewardedAdManager,
             appOpenAdManager: appOpenAdManager,
-            analyticsTracker: analyticsTracker
+            analyticsTracker: analyticsTracker,
+            notificationManager: notificationManager
         )
     }
 

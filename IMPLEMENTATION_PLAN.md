@@ -281,14 +281,25 @@ to send them). All require either backend work or violate App Store rules.
 
 ---
 
-## 8. Open items to confirm before/at Phase 0
-- Min iOS version (default 16.0).
-- iOS AdMob app ID + banner/rewarded/app-open unit IDs; ironSource iOS app key.
-- App Store Connect subscription product IDs + pricing/trial config.
-- ~~APNs / backend push~~ — **out of scope: no backend changes** (see §7). Background notifications
-  are limited to best-effort `BGAppRefreshTask`; this is an accepted limitation to sign off on.
-- Firebase iOS `GoogleService-Info.plist`.
-- Whether a shared design spec exists, or if SwiftUI should be pixel-matched from the Compose source.
+## 8. Open items — final status (all 8 phases complete, see PROGRESS.md for the full log)
+- ~~Min iOS version~~ — **resolved: 16.0**, used throughout.
+- **iOS AdMob app ID + unit IDs** — still Google's public test IDs (`Constants.swift`,
+  `Info.plist` `GADApplicationIdentifier`); real production IDs must be created in the AdMob
+  console and swapped in before release. **ironSource** was descoped by user decision in Phase 5
+  (no SPM support; would need CocoaPods + project restructure) — AdMob alone is fully wired.
+- **App Store Connect subscription product IDs** — `BillingProducts.swift` IDs
+  (`weeklypremium_march2026`, `monthly.premium_v2`, `annual_permium_v2`) must exist as real
+  products in App Store Connect before real purchases can succeed; `TempMailPlus.storekit`
+  (Phase 6) lets the user verify the purchase flow locally without them.
+- ~~APNs / backend push~~ — **out of scope: no backend changes** (see §7). Implemented in Phase 8:
+  foreground local notifications (real, verified via the actual OS permission dialog) + best-effort
+  `BGAppRefreshTask` background polling. This is an accepted, documented limitation, not a gap.
+- **Firebase iOS `GoogleService-Info.plist`** — still doesn't exist (no iOS Firebase app
+  registered). `AnalyticsTrackerImpl` (Phase 7, `os.Logger`-backed) is the swap-in-ready seam;
+  real Firebase Analytics is a single new file + one `AppContainer` line once credentials exist.
+- ~~Whether a shared design spec exists~~ — **resolved: pixel-matched from the Compose source**
+  throughout, including real converted assets where available (app icon, onboarding artwork,
+  Lottie animation) and SF Symbol stand-ins clearly documented where not (drawer/social icons).
 
 ---
 

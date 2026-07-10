@@ -1,9 +1,9 @@
 import SwiftUI
+import Lottie
 
-/// Ported from Android `presentation/screen/premium/SubscriptionScreen.kt`.
-/// Uses a crown SF Symbol as a stand-in for the Android Lottie `twincle_crown` animation
-/// (the .json is bundled from Phase 0; swapping in a real Lottie render is Phase 7 polish —
-/// lottie-ios is a clean SPM add like Phase 5's ad SDKs, just out of scope for this phase).
+/// Ported from Android `presentation/screen/premium/SubscriptionScreen.kt`. Uses the real
+/// `twincle_crown` Lottie animation (bundled since Phase 0, wired up in Phase 8 — lottie-ios
+/// added via SPM, same clean-add pattern as Phase 5/6's other SPM dependencies).
 struct SubscriptionSheet: View {
     @ObservedObject var viewModel: SubscriptionViewModel
     let onDismiss: () -> Void
@@ -17,9 +17,8 @@ struct SubscriptionSheet: View {
                     .padding(.top, 10)
                     .padding(.bottom, 8)
 
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(AppColors.darkYellow)
+                LottieView(animation: .named("twincle_crown"))
+                    .looping()
                     .frame(width: 90, height: 90)
 
                 Text("Experience More with Premium")

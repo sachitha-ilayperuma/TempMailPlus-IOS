@@ -29,4 +29,9 @@ enum PreferenceKeys {
     static let serverTimeOffset           = "server_time_offset"
     static let freeCustomEmailTimestamp   = "free_cu_email_timestamp"
     static let isEmailLoaded              = "is_email_loaded"
+
+    /// iOS-only (Phase 8, no Android source key): tracks email ids already seen by
+    /// `BackgroundRefreshManager` so its best-effort background poll only notifies about
+    /// genuinely new mail, not the whole inbox on every run.
+    static let seenEmailIds               = "seen_email_ids"
 }
